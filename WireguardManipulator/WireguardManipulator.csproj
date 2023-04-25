@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ServerQuerier\ServerQuerier.csproj" />
+  </ItemGroup>
+
 </Project>
