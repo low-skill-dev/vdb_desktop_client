@@ -17,35 +17,18 @@
 
 //namespace UserInterface.Services;
 
-//public sealed class JwtService
+//public static class JwtService
 //{
-//	private JwtSecurityTokenHandler _tokenHandler;
-
-//	public JwtService()
+//	public static IEnumerable<Claim>? ValidateJwtToken(string token, out DateTime ValidTo)
 //	{
-//		this._tokenHandler = new JwtSecurityTokenHandler();
-//		_tokenHandler.ReadJwtToken("").
-//	}
+//		var readed = new JwtSecurityTokenHandler().ReadJwtToken(token);
+//		ValidTo = readed.ValidTo;
 
-//	#region app-specific
-//	public string GenerateAccessJwtToken(UserInfo user)
-//	{
-//		return GenerateJwtToken(new Claim[]
-//		{
-//			new Claim(nameof(user.Id),user.Id.ToString()),
-//			new Claim(nameof(user.IsAdmin), user.IsAdmin.ToString()),
-//			new Claim(nameof(user.Email), user.Email),
-//			new Claim(nameof(user.IsEmailConfirmed),user.IsEmailConfirmed.ToString()),
-//			new Claim(nameof(user.PayedUntilUtc), user.PayedUntilUtc.ToString("o")) // 'o' format provider satisfies ISO 8601
-//		});
+//		// consider invalidate if less than 5 seconds lifetime left
+//		if(readed.ValidTo > DateTime.UtcNow.AddSeconds(+5)) {
+//			return readed.Claims;
+//		} else {
+//			return null;
+//		}
 //	}
-
-//	public string GenerateRefreshJwtToken(RefreshToken token)
-//	{
-//		return GenerateJwtToken(new[] {
-//			new Claim(nameof(token.IssuedToUser), token.IssuedToUser.ToString()),
-//			new Claim(nameof(token.Entropy),token.Entropy.ToString()),
-//			}, RefreshTokenLifespan);
-//	}
-//	#endregion
 //}

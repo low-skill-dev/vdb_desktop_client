@@ -11,23 +11,53 @@ internal static class CommandRunner
 {
 	public static async Task<string> RunAsync(string command)
 	{
-		var proc = new Process();
-		var info = new ProcessStartInfo();
-		info.RedirectStandardOutput = true;
-		info.RedirectStandardError = true;
-		info.UseShellExecute = false;
-		info.CreateNoWindow = true;
+		try {
+			var proc = new Process();
+			var info = new ProcessStartInfo();
+			info.RedirectStandardOutput = true;
+			info.RedirectStandardError = true;
+			info.UseShellExecute = false;
+			info.CreateNoWindow = true;
 
-		info.FileName = "cmd.exe";
-		info.Arguments = "/c "+command;
-		proc.StartInfo = info;
-		proc.Start();
-		await proc.WaitForExitAsync();
+			info.FileName = "cmd.exe";
+			info.Arguments = "/c " + command;
+			proc.StartInfo = info;
+			proc.Start();
+			await proc.WaitForExitAsync();
 
-		var error = await proc.StandardError.ReadToEndAsync();
-		if (!string.IsNullOrWhiteSpace(error))
-			throw new AggregateException(error);
+			var error = await proc.StandardError.ReadToEndAsync();
+			if(!string.IsNullOrWhiteSpace(error))
+				throw new AggregateException(error);
 
-		return await proc.StandardOutput.ReadToEndAsync();
+			return await proc.StandardOutput.ReadToEndAsync();
+		} catch(Exception ex) {
+			return ex.Message;
+		}
+	}
+
+	public static string Run(string command)
+	{
+		try {
+			var proc = new Process();
+			var info = new ProcessStartInfo();
+			info.RedirectStandardOutput = true;
+			info.RedirectStandardError = true;
+			info.UseShellExecute = false;
+			info.CreateNoWindow = true;
+
+			info.FileName = "cmd.exe";
+			info.Arguments = "/c " + command;
+			proc.StartInfo = info;
+			proc.Start();
+			proc.WaitForExit();
+
+			var error = proc.StandardError.ReadToEnd();
+			if(!string.IsNullOrWhiteSpace(error))
+				throw new AggregateException(error);
+
+			return proc.StandardOutput.ReadToEnd();
+		} catch (Exception ex) {
+			return ex.Message;
+		}
 	}
 }

@@ -9,18 +9,13 @@ namespace WireguardManipulator;
 
 public sealed class KeyPair
 {
-	public string Public { get; init; }
-	public string Private { get; init; }
+	public string Public { get; set; }
+	public string Private { get; set; }
 
-	public static async Task<KeyPair> Create()
+	public KeyPair() : this(CommandRunner.Run($"wg genkey")) { }
+	public KeyPair(string privKey)
 	{
-		var priv = await CommandRunner.RunAsync($"wg genkey");
-		var pub = await CommandRunner.RunAsync($"echo {priv} | wg pubkey");
-
-		return new KeyPair { Private = priv, Public = pub };
+		Private = privKey.Trim("\r\n\t,; ".ToCharArray());
+		Public = CommandRunner.Run($"echo {Private} | wg pubkey").Trim("\r\n\t,; ".ToCharArray());
 	}
-
-#pragma warning disable CS8618 // factory method implementation be like...
-	private KeyPair() { }
-#pragma warning restore CS8618
 }

@@ -10,4 +10,9 @@ public class AddPeerResponse
         AllowedIps = allowedIps;
         InterfacePublicKey = interfacePublicKey;
     }
+
+    public AddPeerResponse()
+    {
+
+    }
 }
