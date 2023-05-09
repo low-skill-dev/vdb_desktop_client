@@ -21,7 +21,7 @@ namespace UserInterface;
 public partial class MainWindow : Window
 {
 	private UserInterfaceManager UIManager;
-
+	System.Windows.Forms.NotifyIcon ni;
 	[DllImport("kernel32")] public static extern bool AllocConsole();
 	public MainWindow()
 	{
@@ -41,7 +41,7 @@ public partial class MainWindow : Window
 
 
 		var Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath);
-		System.Windows.Forms.NotifyIcon ni = new System.Windows.Forms.NotifyIcon();
+		ni = new System.Windows.Forms.NotifyIcon();
 		ni.Icon = Icon;
 		ni.Visible = true;
 		ni.DoubleClick += 
@@ -181,6 +181,8 @@ public partial class MainWindow : Window
 
 	protected override async void OnClosing(CancelEventArgs e)
 	{
+		ni.Visible = false;
+
 		try {
 			await UIManager.Disconnect();
 		} catch { }
