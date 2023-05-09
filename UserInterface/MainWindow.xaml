@@ -7,21 +7,22 @@
         mc:Ignorable="d"
 		FontSize="24"
 		FontFamily="Arial"
-        Title="vdb" SizeToContent="WidthAndHeight" ResizeMode="CanMinimize">
+		Width="0" Height="0"
+        Title="Vdb" SizeToContent="WidthAndHeight" ResizeMode="CanMinimize">
 	<Grid Name="WrapperGrid">
 		<StackPanel Name="AuthPanel" Height="400" Width="300" Orientation="Horizontal" Background="White">
 			<StackPanel Margin="25,10,25,0" Width="250" Name="LoginMenu" Orientation="Vertical">
-				<Label FontWeight="SemiBold">Email</Label>
-				<TextBox FontSize="20" Width="250" Padding="3" Name="EmailTB" BorderThickness="3" BorderBrush="Black" />
-				<Label FontWeight="SemiBold">Password</Label>
-				<TextBox FontSize="20" Width="250" Padding="3" Name="PasswordTB" BorderThickness="3" BorderBrush="Black"/>
+				<Label  Margin="-5,0,0,0" FontWeight="SemiBold">Email</Label>
+				<TextBox KeyDown="EmailTB_KeyDown" FontSize="20" Width="250" Padding="3" Name="EmailTB" BorderThickness="3" BorderBrush="Black" />
+				<Label Margin="-5,0,0,0" FontWeight="SemiBold">Password</Label>
+				<PasswordBox KeyDown="PasswordTB_KeyDown" FontSize="20" Width="250" Padding="3" Name="PasswordTB" BorderThickness="3" BorderBrush="Black"/>
 				<Button Margin="0,10,0,0" Width="250" Padding="5" Name="LoginBT" Click="LoginBT_Click">
 					log in
 				</Button>
-				<Button Width="200" FontSize="20" Padding="3" FontFamily="Arial" Margin="25,10,25,0" Name="asGuestBT" Click="asGuestBT_Click" IsEnabled="False" ToolTip="in development">
+				<Button Visibility="Collapsed" Width="200" FontSize="20" Padding="3" FontFamily="Arial" Margin="25,10,25,0" Name="asGuestBT" Click="asGuestBT_Click" IsEnabled="False" ToolTip="in development">
 					continue as guest
 				</Button>
-				<TextBlock Margin="0,10,0,0" TextWrapping="Wrap" FontSize="14" Background="LightCoral" Padding="5" MaxHeight="120" Name="AuthErrorTB"/>
+				<TextBlock Margin="0,10,0,0" TextWrapping="Wrap" Visibility="Collapsed" FontSize="14" Background="LightCoral" Padding="5" MaxHeight="120" Name="AuthErrorTB"/>
 			</StackPanel>
 		</StackPanel>
 		<StackPanel Height="600" Width="400" Name="TunnelingPanel" Orientation="Horizontal" Visibility="Collapsed">
@@ -34,10 +35,10 @@
 					<TextBlock>Access level:</TextBlock>
 					<TextBlock  Margin="10,0,0,0"  FontWeight="Bold" Name="UserAccessLevelLB" >unknown</TextBlock>
 				</StackPanel>
-				<Button Margin="0,0,0,0" Background="Black" Foreground="White">LOG OUT</Button>
+				<Button Name="LogOutBT" Click="LogOutBT_Click" Margin="0,0,0,0" Background="Black" Foreground="White">LOG OUT</Button>
 				<TextBlock Margin="0,10,0,0">Servers</TextBlock>
-				<TextBlock FontSize="18">Double click on the server to connect.</TextBlock>
-				<StackPanel Name="ServersListSP">
+				<TextBlock FontSize="18">Double click on the server to switch.</TextBlock>
+				<StackPanel Name="ServersListSP" Margin="0,3,0,0">
 					
 				</StackPanel>
 			</StackPanel>

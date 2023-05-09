@@ -59,13 +59,10 @@ public class TunnelManager
 
 	public async Task<bool> EstablishTunnel()
 	{
-#if DEBUG
-		var t = ConfigPath;
-#endif
 		if(!File.Exists(ConfigPath)) throw new FileNotFoundException($"Configuration file was not found at {ConfigPath}.");
 
-		return string.IsNullOrWhiteSpace(await CommandRunner.RunAsync(
-					$"wireguard /installtunnelservice {ConfigPath}"));
+		var wgResponse = await CommandRunner.RunAsync($"wireguard /installtunnelservice {ConfigPath}");
+		return string.IsNullOrWhiteSpace(wgResponse);
 	}
 
 	public async Task<bool> DeleteTunnel()

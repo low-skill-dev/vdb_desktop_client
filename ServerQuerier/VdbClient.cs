@@ -27,6 +27,7 @@ public sealed class VdbClient
 	public string QueryStartString { get; set; } = @"?";
 	public string ApiBasePath { get; set; } = @"/api";
 	public string AuthPath { get; set; } = @"/auth";
+	public string SelfPath { get; set; } = @"/self";
 	public string RefreshJwtInBodyQuery { get; set; } = "refreshJwtInBody=true";
 	public string ConnectionPath { get; set; } = @"/connection";
 	public string NodesListPath { get; set; } = @"/nodes-list";
@@ -182,6 +183,26 @@ public sealed class VdbClient
 
 		return response.IsSuccessStatusCode;
 	}
+
+	public async Task<bool> UnregisterDevice(AddDeviceRequest request)
+	{
+		var response = await httpClient.PatchAsync(
+			HostPathTls + ApiBasePath + DevicePath,
+			JsonContent.Create(request, options: jsonOptions));
+		LastStatusCode = (int)response.StatusCode;
+
+		return response.IsSuccessStatusCode;
+	}
+	public async Task<bool> TerminateSelf()
+	{
+		
+		var response = await httpClient.DeleteAsync(
+			HostPathTls + ApiBasePath + AuthPath + SelfPath + $"/{this.RefreshToken}");
+		LastStatusCode = (int)response.StatusCode;
+
+		return response.IsSuccessStatusCode;
+	}
+
 
 	public async Task<PublicNodeInfo[]?> GetNodesList()
 	{
