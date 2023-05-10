@@ -202,7 +202,7 @@ public partial class MainWindow : Window
 
 	private async void LogOutBT_Click(object sender, RoutedEventArgs e)
 	{
-
+		WrapperGrid.IsEnabled = false;
 		try {
 			await UIManager.Disconnect();
 			await UIManager.LogOut();
@@ -210,6 +210,7 @@ public partial class MainWindow : Window
 
 			this.SetVisiblePanel();
 		} catch { }
+		WrapperGrid.IsEnabled = true;
 	}
 
 	protected override void OnStateChanged(EventArgs e)

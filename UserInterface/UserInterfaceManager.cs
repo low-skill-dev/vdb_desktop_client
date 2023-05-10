@@ -154,6 +154,9 @@ internal sealed class UserInterfaceManager
 		if(status == 401) {
 			throw new WebException("Wrong email or password.");
 		} else
+		if(status == 404) {
+			throw new WebException("User not found. Please visit the website and sign up.");
+		} else
 		if(status >= 400 && status <= 499) {
 			throw new WebException("Your request was reject by the server.");
 		} else

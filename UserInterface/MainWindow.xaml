@@ -12,12 +12,16 @@
 	<Grid Name="WrapperGrid">
 		<StackPanel Name="AuthPanel" Height="400" Width="300" Orientation="Horizontal" Background="White">
 			<StackPanel Margin="25,10,25,0" Width="250" Name="LoginMenu" Orientation="Vertical">
+				<StackPanel Margin="0,20,0,10" HorizontalAlignment="Center" Orientation="Horizontal">
+					<TextBlock FontWeight="bold" Text="Sign in" />
+				</StackPanel>
+				
 				<Label  Margin="-5,0,0,0" FontWeight="SemiBold">Email</Label>
 				<TextBox KeyDown="EmailTB_KeyDown" FontSize="20" Width="250" Padding="3" Name="EmailTB" BorderThickness="3" BorderBrush="Black" />
 				<Label Margin="-5,0,0,0" FontWeight="SemiBold">Password</Label>
 				<PasswordBox KeyDown="PasswordTB_KeyDown" FontSize="20" Width="250" Padding="3" Name="PasswordTB" BorderThickness="3" BorderBrush="Black"/>
 				<Button Margin="0,10,0,0" Width="250" Padding="5" Name="LoginBT" Click="LoginBT_Click">
-					log in
+					SUBMIT
 				</Button>
 				<Button Visibility="Collapsed" Width="200" FontSize="20" Padding="3" FontFamily="Arial" Margin="25,10,25,0" Name="asGuestBT" Click="asGuestBT_Click" IsEnabled="False" ToolTip="in development">
 					continue as guest
