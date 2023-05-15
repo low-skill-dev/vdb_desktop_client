@@ -177,7 +177,7 @@ public sealed class VdbClient
 	public async Task<bool> RegisterDevice(AddDeviceRequest request)
 	{
 		var response = await httpClient.PutAsync(
-			HostPathTls + ApiBasePath + DevicePath + QueryStartString + OkIfExistsQuery,
+			HostPathTls + ApiBasePath + DevicePath,
 			JsonContent.Create(request, options: jsonOptions));
 		LastStatusCode = (int)response.StatusCode;
 

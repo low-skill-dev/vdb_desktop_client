@@ -46,7 +46,7 @@ internal sealed class UserInterfaceManager
 
 
 	public readonly VdbClient serverClient;
-	public readonly TunnelManager tunnelManager;
+	public TunnelManager tunnelManager;
 	public PublicNodeInfo[] Nodes { get; private set; }
 	//public readonly JwtSecurityTokenHandler tokenHandler;
 	public UserInterfaceManager()
@@ -186,6 +186,8 @@ internal sealed class UserInterfaceManager
 			throw new WebException("Server response was in unexpected format.");
 		}
 	}
+
+	private static int safeCounter = 0;
 	private async Task RegisterDevice()
 	{
 		var response = await serverClient.RegisterDevice(new() { WireguardPublicKey = tunnelManager.PublicKey });
@@ -193,7 +195,15 @@ internal sealed class UserInterfaceManager
 
 		if(status == 409) {
 			throw new WebException("Devices limit reached. Please visit you personal area on the website to delete one of the the devices.");
-		} else
+		}else 
+		if(status == 303) { // key duplicates
+			if(safeCounter++ < 3) { // there is an unbelieveable low change this to happend 5 times, like N/5 to 2^256.
+				this.tunnelManager = new();
+				await RegisterDevice();
+				return;
+			} else
+				throw new WebException("The generated key was rejected by the server. Please restart the program to create a new one.");
+		}
 		if((!(status >= 200 && status <= 299)) || response == false) {
 			throw new WebException("Unknown error occurred during the request.");
 		}

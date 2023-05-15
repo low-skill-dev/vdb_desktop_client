@@ -32,7 +32,7 @@ public class TunnelManager
 		Keys = CreatePair();
 	}
 
-	public static KeyPair CreatePair()
+	private static KeyPair CreatePair()
 	{
 		KeyPair keys;
 		try {
