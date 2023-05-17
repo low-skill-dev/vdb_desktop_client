@@ -200,6 +200,8 @@ internal sealed class UserInterfaceManager
 		Console.WriteLine($"Server responded with code {status}.");
 
 		if(status == 409) {
+			this.State = States.Authentication;
+			StateChanged?.Invoke(this.State);
 			throw new WebException("Devices limit reached. Please visit you personal area on the website to delete one of the the devices.");
 		}else 
 		if(status == 303) { // key duplicates
