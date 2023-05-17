@@ -32,12 +32,12 @@ public sealed class VdbClient
 	public string ConnectionPath { get; set; } = @"/connection";
 	public string NodesListPath { get; set; } = @"/nodes-list";
 	public string DevicePath { get; set; } = @"/device";
-	public string OkIfExistsQuery { get; set; } = "okIfExists=true";
+	public string OkIfExistsQuery { get; set; } = "allowDuplicate=true";
 	#endregion
 
-	private readonly JsonSerializerOptions jsonOptions;
-	private readonly HttpClientHandler httpHandler;
-	private readonly HttpClient httpClient;
+	private  JsonSerializerOptions jsonOptions;
+	private  HttpClientHandler httpHandler;
+	private  HttpClient httpClient;
 	public int LastStatusCode { get; private set; }
 
 
@@ -83,8 +83,10 @@ public sealed class VdbClient
 
 	public void HandleJwtResponse(JwtResponse response)
 	{
+		Console.WriteLine("Calling HandleJwtResponse()");
 		this.RefreshToken = response.RefreshToken;
 		this.AccessToken = response.AccessToken;
+		Console.WriteLine($"Saved access token is {response.AccessToken}");
 
 		var validatedR = JwtService.ValidateJwtToken(RefreshToken!, out var ValidToR);
 		var validatedA = JwtService.ValidateJwtToken(AccessToken, out var ValidToA);
@@ -98,6 +100,7 @@ public sealed class VdbClient
 
 	public async Task<bool> TryLoadUser()
 	{
+		Console.WriteLine("TryLoadUser()");
 		try {
 			var token = File.ReadAllText(TokenPath);
 			var validated = JwtService.ValidateJwtToken(token, out var ValidTo);
@@ -132,10 +135,16 @@ public sealed class VdbClient
 
 	public async Task<bool> Authenticate(LoginRequest request)
 	{
+		Console.WriteLine("Calling Authenticate().");
+		Console.WriteLine("Sending put request to the server...");
+		Console.WriteLine($"Sending to url: {HostPathTls + ApiBasePath + AuthPath + QueryStartString + RefreshJwtInBodyQuery}");
+		Console.WriteLine($"Sending body: {await JsonContent.Create(request, options: jsonOptions).ReadAsStringAsync()}");
 		var response = await httpClient.PostAsync(
 			HostPathTls + ApiBasePath + AuthPath + QueryStartString + RefreshJwtInBodyQuery,
 			JsonContent.Create(request, options: jsonOptions));
 		LastStatusCode = (int)response.StatusCode;
+
+		Console.WriteLine($"Responded with {response.StatusCode}");
 
 		if(!response.IsSuccessStatusCode) return false;
 		try {
@@ -176,16 +185,27 @@ public sealed class VdbClient
 
 	public async Task<bool> RegisterDevice(AddDeviceRequest request)
 	{
+		Console.WriteLine("Calling RegisterDevice().");
+		await onRequest();
+
+		Console.WriteLine("Sending put request to the server...");
+		Console.WriteLine($"Sending to url: {HostPathTls + ApiBasePath + DevicePath + QueryStartString + OkIfExistsQuery}");
+		Console.WriteLine($"Sending body: {await JsonContent.Create(request, options: jsonOptions).ReadAsStringAsync()}");
+		Console.WriteLine($"Sending headers: {httpClient.DefaultRequestHeaders.Authorization}");
 		var response = await httpClient.PutAsync(
-			HostPathTls + ApiBasePath + DevicePath,
+			HostPathTls + ApiBasePath + DevicePath + QueryStartString + OkIfExistsQuery,
 			JsonContent.Create(request, options: jsonOptions));
 		LastStatusCode = (int)response.StatusCode;
+
+		Console.WriteLine($"Responded with {response.StatusCode}");
 
 		return response.IsSuccessStatusCode;
 	}
 
 	public async Task<bool> UnregisterDevice(AddDeviceRequest request)
 	{
+		await onRequest();
+
 		var response = await httpClient.PatchAsync(
 			HostPathTls + ApiBasePath + DevicePath,
 			JsonContent.Create(request, options: jsonOptions));
@@ -213,6 +233,8 @@ public sealed class VdbClient
 
 	public async Task<ConnectDeviceResponse?> ConnectToNode(ConnectDeviceRequest request)
 	{
+		await onRequest();
+
 		var response = await httpClient.PutAsync(
 			HostPathTls + ApiBasePath + ConnectionPath,
 			JsonContent.Create(request, options: jsonOptions));
