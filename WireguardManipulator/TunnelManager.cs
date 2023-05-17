@@ -70,4 +70,9 @@ public class TunnelManager
 		return string.IsNullOrWhiteSpace(await CommandRunner.RunAsync(
 			$"wireguard /uninstalltunnelservice {Path.GetFileNameWithoutExtension(ConfigPath)}"));
 	}
+
+	public void CallWgShow()
+	{
+		CommandRunner.Run("wg show");
+	}
 }

@@ -32,23 +32,26 @@ public partial class MainWindow : Window
 
 		Console.WriteLine("Creating UIManager...");
 		UIManager = new();
-		UIManager.StateChanged += (state) => { Dispatcher.Invoke(()=>
-			Console.WriteLine($"\nState changed to: {UIManager.State}.\n")); };
+		UIManager.StateChanged += (state) => {
+			Dispatcher.Invoke(() =>
+				Console.WriteLine($"\nState changed to: {UIManager.State}.\n"));
+		};
 
 		Console.WriteLine("Initing components...");
 		InitializeComponent();
 		Console.WriteLine("Inited components.");
 
-
+		Console.WriteLine("Creating icons...");
 		var Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath);
 		ni = new System.Windows.Forms.NotifyIcon();
 		ni.Icon = Icon;
 		ni.Visible = true;
-		ni.DoubleClick += 
+		ni.DoubleClick +=
 			delegate (object sender, EventArgs args) {
 				this.Show();
 				this.WindowState = WindowState.Normal;
 			};
+		Console.WriteLine("Created icons.");
 	}
 	private void onNewAction()
 	{
@@ -59,6 +62,7 @@ public partial class MainWindow : Window
 	protected override async void OnInitialized(EventArgs e)
 	{
 		base.OnInitialized(e);
+		Console.WriteLine("OnInitialized called.");
 		UIManager.StateChanged += (state) => Dispatcher.Invoke(this.SetVisiblePanel);
 		UIManager.StateChanged += (state) => {
 			if(state != UserInterfaceManager.States.Ready) {
@@ -68,6 +72,7 @@ public partial class MainWindow : Window
 		this.AuthPanel.Visibility = Visibility.Collapsed;
 		this.TunnelingPanel.Visibility = Visibility.Collapsed;
 
+		Console.WriteLine("Trying to load user.");
 		await UIManager.TryLoadUser();
 
 		UIManager.ActiveNodeChanged += (nodeId) => {

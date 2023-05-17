@@ -54,6 +54,7 @@ internal sealed class UserInterfaceManager
 		this.State = 0;
 		this.serverClient = new();
 		this.tunnelManager = new();
+		//this.tunnelManager.CallWgShow();
 		//this.tokenHandler = new();
 
 		Console.WriteLine("Trying to load user from local storage...");
@@ -62,7 +63,8 @@ internal sealed class UserInterfaceManager
 	public async Task<bool> TryLoadUser()
 	{
 		var result =  await serverClient.TryLoadUser();
-		if(result && serverClient.AccessToken is not null) {
+		if(result && !string.IsNullOrWhiteSpace(serverClient.AccessToken)) {
+			Console.WriteLine($"Got access token using local refresh: {serverClient.AccessToken}");
 			try {
 				try {
 					var access = JwtService.ValidateJwtToken(serverClient.AccessToken, out _);
@@ -190,8 +192,12 @@ internal sealed class UserInterfaceManager
 	private static int safeCounter = 0;
 	private async Task RegisterDevice()
 	{
+		Console.WriteLine("Calling RegisterDevice().");
+
 		var response = await serverClient.RegisterDevice(new() { WireguardPublicKey = tunnelManager.PublicKey });
 		var status = serverClient.LastStatusCode;
+
+		Console.WriteLine($"Server responded with code {status}.");
 
 		if(status == 409) {
 			throw new WebException("Devices limit reached. Please visit you personal area on the website to delete one of the the devices.");
@@ -204,7 +210,7 @@ internal sealed class UserInterfaceManager
 			} else
 				throw new WebException("The generated key was rejected by the server. Please restart the program to create a new one.");
 		}
-		if((!(status >= 200 && status <= 299)) || response == false) {
+		if((!((status >= 200 && status <= 299) || status == 302))) {
 			throw new WebException("Unknown error occurred during the request.");
 		}
 

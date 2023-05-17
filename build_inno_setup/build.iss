@@ -53,8 +53,8 @@ procedure InstallWg;
     Exec('cmd.exe', ExpandConstant('/q /c MsiExec.exe /i {tmp}\{#WgFileName} DO_NOT_LAUNCH=1 /qn'), '', SW_HIDE, ewWaitUntilTerminated, resultCode);
   end;
 
-[Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: runascurrentuser nowait postinstall skipifsilent
+//[Run]
+//Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: shellexec runasoriginaluser postinstall waituntilterminated skipifsilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{userdocs}\Vdb\refresh.token"
