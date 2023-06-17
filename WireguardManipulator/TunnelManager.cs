@@ -1,10 +1,5 @@
-﻿using main_server_api.Models.UserApi.Application.Device;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Environment;
+﻿using ServerQuerier.Helpers;
+using ServerQuerier.Models.Device;
 
 namespace WireguardManipulator;
 
@@ -17,19 +12,16 @@ namespace WireguardManipulator;
  */
 public class TunnelManager
 {
-	/* IF YOU CHANGE THIS PATH IN THE NEXT RELEASE PROVIDE THE BACKWARD COPABILITY
-	 */
-
-	public static string ApplicationPath => Path.Join(GetFolderPath(SpecialFolder.Personal), @"Vdb");
+	public static string ApplicationPath => Path.Join(Constants.WorkingDirectory);
 	public static string ConfigPath => Path.Join(ApplicationPath, @"vdb0.conf");
 	public static string KeyPath => Path.Join(ApplicationPath, @"vdb0.key");
 
-	private KeyPair Keys;
-	public string PublicKey => Keys.Public;
+	private readonly KeyPair Keys;
+	public string PublicKey => this.Keys.Public;
 
 	public TunnelManager()
 	{
-		Keys = CreatePair();
+		this.Keys = CreatePair();
 	}
 
 	private static KeyPair CreatePair()
@@ -45,7 +37,6 @@ public class TunnelManager
 			keys = new(pk);
 		} catch {
 			keys = new KeyPair();
-			Directory.CreateDirectory(ApplicationPath);
 			File.WriteAllText(KeyPath, keys.Private);
 		}
 
@@ -55,6 +46,11 @@ public class TunnelManager
 	public void WriteConfig(ConnectDeviceResponse mainServerResponse)
 	{
 		File.WriteAllText(ConfigPath, ConfigGenerator.GenerateConfig(this.Keys.Private, mainServerResponse));
+	}
+	public void DeleteConfigFiles()
+	{
+		File.Delete(ConfigPath);
+		File.Delete(KeyPath);
 	}
 
 	public async Task<bool> EstablishTunnel()
@@ -69,10 +65,5 @@ public class TunnelManager
 	{
 		return string.IsNullOrWhiteSpace(await CommandRunner.RunAsync(
 			$"wireguard /uninstalltunnelservice {Path.GetFileNameWithoutExtension(ConfigPath)}"));
-	}
-
-	public void CallWgShow()
-	{
-		CommandRunner.Run("wg show");
 	}
 }

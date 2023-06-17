@@ -1,18 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http.Json;
-using System.Net.Http;
-using System.Net;
+﻿using ServerQuerier.Models.Device;
 using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.IO;
-using System.Diagnostics;
-using main_server_api.Models.UserApi.Application.Device;
 
 namespace WireguardManipulator;
-
 
 internal static class ConfigGenerator
 {
@@ -40,15 +29,15 @@ internal static class ConfigGenerator
 	)
 	{
 		var sb = new StringBuilder(256);
-		sb.AppendLine($"[Interface]");
-		sb.AppendLine($"PrivateKey = {PrivateKey}");
-		sb.AppendLine($"Address = {Address}");
-		sb.AppendLine($"DNS = {DNS}");
-		sb.AppendLine();
-		sb.AppendLine($"[Peer]");
-		sb.AppendLine($"PublicKey = {RemoteKey}");
-		sb.AppendLine($"AllowedIPs = {AllowedIPs}");
-		sb.AppendLine($"Endpoint = {RemoteAddress}:{RemotePort}");
+		_ = sb.AppendLine($"[Interface]");
+		_ = sb.AppendLine($"PrivateKey = {PrivateKey}");
+		_ = sb.AppendLine($"Address = {Address}");
+		_ = sb.AppendLine($"DNS = {DNS}");
+		_ = sb.AppendLine();
+		_ = sb.AppendLine($"[Peer]");
+		_ = sb.AppendLine($"PublicKey = {RemoteKey}");
+		_ = sb.AppendLine($"AllowedIPs = {AllowedIPs}");
+		_ = sb.AppendLine($"Endpoint = {RemoteAddress}:{RemotePort}");
 
 		return sb.ToString();
 	}

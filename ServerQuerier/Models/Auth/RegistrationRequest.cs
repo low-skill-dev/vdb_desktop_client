@@ -1,4 +1,4 @@
-﻿namespace main_server_api.Models.Auth;
+﻿namespace ServerQuerier.Models.Auth;
 
 public class RegistrationRequest : LoginRequest
 {

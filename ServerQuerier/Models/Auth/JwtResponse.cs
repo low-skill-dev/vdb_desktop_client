@@ -1,4 +1,4 @@
-﻿namespace main_server_api.Models.Auth;
+﻿namespace ServerQuerier.Models.Auth;
 
 public class JwtResponse
 {
@@ -7,7 +7,7 @@ public class JwtResponse
 	public int? RefreshExpires { get; set; }
 
 
-	public JwtResponse(string accessToken, string? refreshToken=null)
+	public JwtResponse(string accessToken, string? refreshToken = null)
 	{
 		this.AccessToken = accessToken;
 		this.RefreshToken = refreshToken;

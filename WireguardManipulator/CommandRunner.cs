@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 //using System.Management.Automation;
 
 namespace WireguardManipulator;
@@ -22,7 +17,7 @@ internal static class CommandRunner
 			info.FileName = "cmd.exe";
 			info.Arguments = "/c " + command;
 			proc.StartInfo = info;
-			proc.Start();
+			_ = proc.Start();
 			await proc.WaitForExitAsync();
 
 			var error = await proc.StandardError.ReadToEndAsync();
@@ -48,7 +43,7 @@ internal static class CommandRunner
 			info.FileName = "cmd.exe";
 			info.Arguments = "/c " + command;
 			proc.StartInfo = info;
-			proc.Start();
+			_ = proc.Start();
 			proc.WaitForExit();
 
 			var error = proc.StandardError.ReadToEnd();
@@ -56,7 +51,7 @@ internal static class CommandRunner
 				throw new AggregateException(error);
 
 			return proc.StandardOutput.ReadToEnd();
-		} catch (Exception ex) {
+		} catch(Exception ex) {
 			return ex.Message;
 		}
 	}

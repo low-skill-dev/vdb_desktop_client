@@ -8,11 +8,14 @@
 		FontSize="24"
 		FontFamily="Arial"
 		Width="0" Height="0"
-        Title="Vdb" SizeToContent="WidthAndHeight" ResizeMode="CanMinimize">
+        Title="Vdb" SizeToContent="WidthAndHeight" ResizeMode="CanMinimize" >
 	<Grid Name="WrapperGrid">
 		<StackPanel Name="AuthPanel" Height="400" Width="300" Orientation="Horizontal" Background="White">
 			<StackPanel Margin="25,10,25,0" Width="250" Name="LoginMenu" Orientation="Vertical">
-				<StackPanel Margin="0,20,0,10" HorizontalAlignment="Center" Orientation="Horizontal">
+				<StackPanel Margin="0,10,0,10" HorizontalAlignment="Center" Orientation="Horizontal">
+					<TextBlock FontWeight="bold" FontSize="30" Text="Vdb VPN" />
+				</StackPanel>
+				<StackPanel Margin="0,0,0,10" HorizontalAlignment="Center" Orientation="Horizontal">
 					<TextBlock FontWeight="bold" Text="Sign in" />
 				</StackPanel>
 				

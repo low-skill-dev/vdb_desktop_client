@@ -1,17 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IdentityModel.Tokens.Jwt;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using main_server_api.Models.UserApi.Website.Common;
-using ServerQuerier;
-using ServerQuerier.Services;
-using ServicesLayer.Models.Services;
-using UserInterface.Models;
+﻿using ServerQuerier.Helpers;
+using ServerQuerier.Models.Auth;
+using ServerQuerier.Models.Nodes;
 using UserInterface.Services;
 using WireguardManipulator;
 
@@ -34,121 +23,144 @@ internal sealed class UserInterfaceManager
 	#endregion
 
 	#region stateful-providing props
-	public States State { get; private set; }
-	 
+	private States _state;
+	private int? _currentlyConnectedNode;
+
+	public States State {
+		get {
+			return this._state;
+		}
+		set {
+			if(this._state != value) {
+				this._state = value;
+				StateChanged?.Invoke(value);
+			}
+		}
+	}
+	public int? CurrentlyConnectedNode {
+		get {
+			return this._currentlyConnectedNode;
+		}
+		set {
+			if(this._currentlyConnectedNode != value) {
+				this._currentlyConnectedNode = value;
+				ActiveNodeChanged?.Invoke(value);
+			}
+		}
+	}
+
 	public event Action<States>? StateChanged;
 	public event Action<int?>? ActiveNodeChanged;
-	public bool IsGuestMode { get; set; }
-	public int? CurrentlyConnectedNode { get; set; }
 	#endregion
+
 
 	public UserInfo UserInfo { get; private set; }
 
-
-	public readonly VdbClient serverClient;
 	public TunnelManager tunnelManager;
 	public PublicNodeInfo[] Nodes { get; private set; }
-	//public readonly JwtSecurityTokenHandler tokenHandler;
+
 	public UserInterfaceManager()
 	{
 		this.State = 0;
-		this.serverClient = new();
 		this.tunnelManager = new();
-		//this.tunnelManager.CallWgShow();
-		//this.tokenHandler = new();
 
 		Console.WriteLine("Trying to load user from local storage...");
+
+		ApiHelperTransient.AuthorizationFailed += () => { this.State = States.Authentication; };
 	}
+
 
 	public async Task<bool> TryLoadUser()
 	{
-		var result =  await serverClient.TryLoadUser();
-		if(result && !string.IsNullOrWhiteSpace(serverClient.AccessToken)) {
-			Console.WriteLine($"Got access token using local refresh: {serverClient.AccessToken}");
-			try {
-				try {
-					var access = JwtService.ValidateJwtToken(serverClient.AccessToken, out _);
-					this.UserInfo = new() {
-						Id = int.Parse(access.First(x => x.Type.Equals(nameof(UserInfo.Id))).Value),
-						Email = access.First(x => x.Type.Equals(nameof(UserInfo.Email))).Value
-							?? throw new ArgumentNullException(nameof(UserInfo.Email)),
-						IsAdmin = bool.Parse(access.First(x => x.Type.Equals(nameof(UserInfo.IsAdmin))).Value),
-						IsEmailConfirmed = bool.Parse(access.First(x => x.Type.Equals(nameof(UserInfo.IsEmailConfirmed))).Value),
-						PayedUntilUtc = DateTime.Parse(access.First(x => x.Type.Equals(nameof(UserInfo.PayedUntilUtc))).Value,
-							CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind)
-					};
+		try {
+			var result = await ApiHelperTransient.Create();
+			if(result is null) return false;
 
-					Console.WriteLine("Authenticated successfully.");
-					this.StateChanged?.Invoke(States.Registering);
-					this.State = States.Registering;
-				} catch {
-					throw new WebException("Server response was in unexpected format.");
-				}
-				await RegisterDevice();
-				this.State = States.Tunneling;
-				StateChanged?.Invoke(this.State);
-				return true;
-			} catch { }
+			this.UserInfo = ApiHelperTransient.UserInfo;
+		} catch {
+			return false;
 		}
 
-		return false;
+		try {
+			_ = await this.RegisterDevice();
+		} catch {
+			return false;
+		}
+
+		this.State = States.Tunneling;
+		return true;
 	}
 
-	private bool wasDelayed = false;
-	public async Task ConnectToSelectedNode(int nodeId)
+
+
+	private int retryCount = 0;
+	private readonly int maxRetryCount = 1;
+	public async Task<bool> ConnectToSelectedNode(int nodeId)
 	{
-		if(nodeId == this.CurrentlyConnectedNode) {
-			await Disconnect();
-			return;
-		}
+		var prev = this.CurrentlyConnectedNode;
+		_ = await this.EnsureDisconnected();
 
-		await Disconnect();
+		if(nodeId == prev) return true;
 
-		var response = await serverClient.ConnectToNode(new() { NodeId = nodeId, WireguardPublicKey = this.tunnelManager.PublicKey });
-		if(response is null && !wasDelayed) {
-			wasDelayed = true;
-			await Task.Delay(1000);// windows to establish regular connection
-			await ConnectToSelectedNode(nodeId);
-			wasDelayed= false;
+		var client = await ApiHelperTransient.Create();
+		if(client is null) return false;
+
+		var response = await client.ConnectToNode(new() { NodeId = nodeId, WireguardPublicKey = this.tunnelManager.PublicKey });
+		if(response is null) {
+			if(this.retryCount++ < this.maxRetryCount) {
+				await Task.Delay(3000); // wait windows to establish regular connection
+				return await this.ConnectToSelectedNode(nodeId); // try once more
+			}
+			return false;
 		}
-		wasDelayed = false;
-		tunnelManager.WriteConfig(response);
-		var result = await tunnelManager.EstablishTunnel();
+		this.retryCount = 0;
+
+		this.tunnelManager.WriteConfig(response);
+		var result = await this.tunnelManager.EstablishTunnel();
 		if(result) {
 			this.CurrentlyConnectedNode = nodeId;
-			ActiveNodeChanged?.Invoke(nodeId);
 		}
+
+		return result;
 	}
 
-	public async Task Disconnect()
+	public async Task<bool> EnsureDisconnected()
 	{
-		await tunnelManager.DeleteTunnel(); // just ensure
+		var response = await this.tunnelManager.DeleteTunnel(); // just ensure
 		this.CurrentlyConnectedNode = null;
-		ActiveNodeChanged?.Invoke(null);
+		return response;
 	}
 
-	public async Task LoginAngRegister(string email, string password)
+	public async Task<bool> LoginAngRegister(string email, string password)
 	{
-		await Login(email, password);
-		await RegisterDevice();
+		return (await this.Login(email, password)) && (await this.RegisterDevice());
 	}
 
-	public async Task LoadNodes()
+	public async Task<bool> LoadNodes()
 	{
-		this.Nodes = (await serverClient.GetNodesList())!
+		var client = await ApiHelperTransient.Create();
+		if(client is null) return false;
+
+		var response = await client.GetNodesList();
+		if(response is null) return false;
+
+		this.Nodes = response
 			.Where(x => x.IsActive == true)
-			.Where(x=> x.UserAccessLevelRequired <= (int)this.UserInfo.GetAccessLevel())
+			.Where(x => x.UserAccessLevelRequired <= (int)this.UserInfo.GetAccessLevel())
+			.OrderByDescending(x => x.UserAccessLevelRequired)
 			.ToArray();
+
+		return true;
 	}
 
-	private async Task Login(string email, string password)
+	private async Task<bool> Login(string email, string password)
 	{
 		if(!DataValidator.ValidateEmail(email) || !DataValidator.ValidatePassword(password)) {
 			throw new UserException("Password or email failed the validation.");
 		}
 
-		var response = await serverClient.Authenticate(new() { Email = email, Password = password });
-		var status = serverClient.LastStatusCode;
+		var response = await AuthHelper.Authenticate(new() { Email = email, Password = password });
+		var status = AuthHelper.LastStatusCode;
 
 		if((status >= 300 && status <= 399) || (status >= 500 && status <= 599)) {
 			throw new WebException("Authentication server is not reachable");
@@ -162,92 +174,85 @@ internal sealed class UserInterfaceManager
 		if(status >= 400 && status <= 499) {
 			throw new WebException("Your request was reject by the server.");
 		} else
-		if((!(status >= 200 && status <= 299)) || response == false) {
+		if((!(status >= 200 && status <= 299)) || response == null) {
 			throw new WebException("Unknown error occurred during the request.");
 		} else
-		if(serverClient.RefreshToken is null || serverClient.AccessToken is null) {
+		if(response.RefreshToken is null || response.AccessToken is null) {
 			throw new WebException("Server did not send refresh token which was expected.");
 		}
 
-		var access = JwtService.ValidateJwtToken(serverClient.AccessToken, out _);
-		try {
-			this.UserInfo = new() {
-				Id = int.Parse(access.First(x => x.Type.Equals(nameof(UserInfo.Id))).Value),
-				Email = access.First(x => x.Type.Equals(nameof(UserInfo.Email))).Value
-					?? throw new ArgumentNullException(nameof(UserInfo.Email)),
-				IsAdmin = bool.Parse(access.First(x => x.Type.Equals(nameof(UserInfo.IsAdmin))).Value),
-				IsEmailConfirmed = bool.Parse(access.First(x => x.Type.Equals(nameof(UserInfo.IsEmailConfirmed))).Value),
-				PayedUntilUtc = DateTime.Parse(access.First(x => x.Type.Equals(nameof(UserInfo.PayedUntilUtc))).Value,
-					CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind)
-			};
+		this.UserInfo = response.UserInfo;
 
-			Console.WriteLine("Authenticated successfully.");
-			this.State = States.Registering;
-			StateChanged?.Invoke(this.State);
-		} catch {
-			throw new WebException("Server response was in unexpected format.");
-		}
+		Console.WriteLine("Authenticated successfully.");
+		this.State = States.Registering;
+
+		return true;
 	}
 
 	private static int safeCounter = 0;
-	private async Task RegisterDevice()
+	private async Task<bool> RegisterDevice()
 	{
-		Console.WriteLine("Calling RegisterDevice().");
-
-		var response = await serverClient.RegisterDevice(new() { WireguardPublicKey = tunnelManager.PublicKey });
-		var status = serverClient.LastStatusCode;
-
-		Console.WriteLine($"Server responded with code {status}.");
+		var client = await ApiHelperTransient.Create();
+		if(client is null) return false;
+		_ = await client.RegisterDevice(new() { WireguardPublicKey = this.tunnelManager.PublicKey });
+		var status = client.LastStatusCode;
 
 		if(status == 409) {
 			this.State = States.Authentication;
-			StateChanged?.Invoke(this.State);
 			throw new WebException("Devices limit reached. Please visit you personal area on the website to delete one of the the devices.");
-		}else 
+		} else
 		if(status == 303) { // key duplicates
-			if(safeCounter++ < 3) { // there is an unbelieveable low change this to happend 5 times, like N/5 to 2^256.
+			if(safeCounter++ < 3) { // there is an unbelievable low chance this to happen 5 times, like (N/2^256)^safeCounter.
 				this.tunnelManager = new();
-				await RegisterDevice();
-				return;
-			} else
+				return await this.RegisterDevice();
+			} else {
 				throw new WebException("The generated key was rejected by the server. Please restart the program to create a new one.");
+			}
 		}
-		if((!((status >= 200 && status <= 299) || status == 302))) {
+		if(!(status >= 200 && status <= 299) && status != 302) {
 			throw new WebException("Unknown error occurred during the request.");
 		}
 
 		this.State = States.Tunneling;
-		StateChanged?.Invoke(this.State);
+
+		return true;
 	}
-	private async Task UnregisterDevice()
+	private async Task<bool> UnregisterDevice()
 	{
-		var response = await serverClient.UnregisterDevice(new() { WireguardPublicKey = tunnelManager.PublicKey });
-		var status = serverClient.LastStatusCode;
+		var client = await ApiHelperTransient.Create();
+		if(client is null) return false;
+
+		var response = await client.UnregisterDevice(new() { WireguardPublicKey = this.tunnelManager.PublicKey });
 
 		this.State = States.Ready;
-		StateChanged?.Invoke(this.State);
+
+		return response;
 	}
-	private async Task TerminateSelf()
+	private async Task<bool> TerminateSelf()
 	{
-		var response = await serverClient.TerminateSelf();
-		var status = serverClient.LastStatusCode;
+		var client = await ApiHelperTransient.Create();
+		if(client is null) return false;
+
+		var response = await client.ServerLogout();
 
 		this.State = States.Authentication;
-		StateChanged?.Invoke(this.State);
+
+		return response;
 	}
 
-	public async Task LogOut()
+	public async Task<bool> LogOut()
 	{
 		try {
-			await this.Disconnect();
-			await this.UnregisterDevice();
-			await this.TerminateSelf();
-			File.Delete(TunnelManager.KeyPath);
-			File.Delete(TunnelManager.ConfigPath);
-			File.Delete(VdbClient.TokenPath);
+			_ = await this.EnsureDisconnected();
+			_ = await this.UnregisterDevice();
+			_ = await this.TerminateSelf();
+			this.tunnelManager.DeleteConfigFiles();
+			LocalHelper.DeleteRefreshToken();
 			this.State = States.Authentication;
-			StateChanged?.Invoke(this.State);
-		} catch { }
+			return true;
+		} catch {
+			return false;
+		}
 	}
 
 }

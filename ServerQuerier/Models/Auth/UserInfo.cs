@@ -1,7 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel;
-
-namespace main_server_api.Models.UserApi.Website.Common;
+﻿namespace ServerQuerier.Models.Auth;
 
 public class UserInfo
 {
@@ -25,9 +22,9 @@ public class UserInfo
 	{
 		switch(this.GetAccessLevel()) {
 			case AccessLevels.Admin: return nameof(AccessLevels.Admin);
-			case AccessLevels.Payed: return nameof(AccessLevels.Payed);
-			case AccessLevels.Free: return nameof(AccessLevels.Free);
-			case AccessLevels.Unconfirmed: return nameof(AccessLevels.Unconfirmed);
+			case AccessLevels.Payed: return nameof(AccessLevels.Payed) + " User";
+			case AccessLevels.Free: return nameof(AccessLevels.Free) + " User";
+			case AccessLevels.Unconfirmed: return nameof(AccessLevels.Free) + " User";
 			default:
 #if RELEASE
 				return "unknown";

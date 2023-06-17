@@ -1,94 +1,104 @@
 ﻿using System.ComponentModel;
-using System.IO;
-using System.Reflection;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using WireguardManipulator;
 
 namespace UserInterface;
 
 // ! entry-point
 public partial class MainWindow : Window
 {
-	private UserInterfaceManager UIManager;
-	System.Windows.Forms.NotifyIcon ni;
-	[DllImport("kernel32")] public static extern bool AllocConsole();
+	private readonly UserInterfaceManager UIManager;
+	private readonly System.Windows.Forms.NotifyIcon ni;
+	[DllImport("kernel32")] private static extern bool AllocConsole();
+	[DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+	[DllImport("User32.dll")] private static extern bool SetForegroundWindow(IntPtr hWnd);
 	public MainWindow()
 	{
+		#region single instance ensure
+		string procName = Process.GetCurrentProcess().ProcessName;
+		Process[] processes = Process.GetProcessesByName(procName);
+		if(processes.Length > 1) {
+			foreach(Process process in processes) {
+				try {
+					const int SW_SHOWNORMAL = 1;
+					ShowWindow(process.MainWindowHandle, SW_SHOWNORMAL);
+					SetForegroundWindow(process.MainWindowHandle);
+				} catch {
+
+				}
+			}
+			return;
+		}
+		#endregion
+
 #if DEBUG
 		AllocConsole();
 #endif
 		Console.WriteLine("Console is alloced.");
 
-		Console.WriteLine("Creating UIManager...");
-		UIManager = new();
-		UIManager.StateChanged += (state) => {
-			Dispatcher.Invoke(() =>
-				Console.WriteLine($"\nState changed to: {UIManager.State}.\n"));
+		this.UIManager = new();
+		this.UIManager.StateChanged += (state) => {
+			this.Dispatcher.Invoke(() =>
+				Console.WriteLine($"\nState changed to: {this.UIManager.State}.\n"));
 		};
 
-		Console.WriteLine("Initing components...");
-		InitializeComponent();
+		this.InitializeComponent();
 		Console.WriteLine("Inited components.");
 
-		Console.WriteLine("Creating icons...");
+		#region minimized icon creator
 		var Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath);
-		ni = new System.Windows.Forms.NotifyIcon();
-		ni.Icon = Icon;
-		ni.Visible = true;
-		ni.DoubleClick +=
+		this.ni = new System.Windows.Forms.NotifyIcon();
+		this.ni.Icon = Icon;
+		this.ni.Visible = true;
+		this.ni.DoubleClick +=
 			delegate (object sender, EventArgs args) {
 				this.Show();
 				this.WindowState = WindowState.Normal;
-			};
+			}
+		!;
 		Console.WriteLine("Created icons.");
+		#endregion
 	}
 	private void onNewAction()
 	{
-		AuthErrorTB.Visibility = Visibility.Hidden;
-		AuthErrorTB.Text = string.Empty;
+		this.AuthErrorTB.Visibility = Visibility.Hidden;
+		this.AuthErrorTB.Text = string.Empty;
 	}
 
 	protected override async void OnInitialized(EventArgs e)
 	{
 		base.OnInitialized(e);
 		Console.WriteLine("OnInitialized called.");
-		UIManager.StateChanged += (state) => Dispatcher.Invoke(this.SetVisiblePanel);
-		UIManager.StateChanged += (state) => {
-			if(state != UserInterfaceManager.States.Ready) {
-				Dispatcher.Invoke(this.OnAuthed);
+		this.UIManager.StateChanged += (state) => this.Dispatcher.Invoke(this.SetVisiblePanel);
+		this.UIManager.StateChanged += (state) => {
+			if(state != UserInterfaceManager.States.Authentication) {
+				this.Dispatcher.Invoke(this.OnAuthed);
 			}
 		};
 		this.AuthPanel.Visibility = Visibility.Collapsed;
 		this.TunnelingPanel.Visibility = Visibility.Collapsed;
 
 		Console.WriteLine("Trying to load user.");
-		await UIManager.TryLoadUser();
+		_ = await this.UIManager.TryLoadUser();
 
-		UIManager.ActiveNodeChanged += (nodeId) => {
+		this.UIManager.ActiveNodeChanged += (nodeId) => {
 			try {
 				for(int i = 0; i < this.ServersListSP.Children.Count; i++) {
+					var nodeComponent = (TextBlock)((Border)this.ServersListSP.Children[i]).Child;
+
 					// dont ask... + dont care
-					var node = int.Parse(((TextBlock)((Border)this.ServersListSP.Children[i]).Child)
+					var node = int.Parse(nodeComponent
 						.Text.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries)[0]
 						.Trim("# ".ToCharArray()));
-					if(nodeId.HasValue && node == nodeId.Value) {
-						((TextBlock)((Border)this.ServersListSP.Children[i]).Child)
-						.Background = new SolidColorBrush(Colors.LightGreen);
-					} else {
-						((TextBlock)((Border)this.ServersListSP.Children[i]).Child)
-						.Background = new SolidColorBrush(Colors.White);
-					}
+
+					nodeComponent.Background = new SolidColorBrush(
+						nodeId.HasValue && node == nodeId.Value
+						? Colors.LightGreen
+						: Colors.White);
 				}
 			} catch { }
 		};
@@ -99,23 +109,24 @@ public partial class MainWindow : Window
 
 	private async void OnAuthed()
 	{
-		if(UIManager.Nodes is null) {
-			await UIManager.LoadNodes();
+		if(this.UIManager.Nodes is null) {
+			_ = await this.UIManager.LoadNodes();
 		}
 
 		this.UserEmailLB.Text = this.UIManager.UserInfo?.Email;
 		this.UserAccessLevelLB.Text = this.UIManager.UserInfo?.GetAccessLevel().ToString();
 
 		this.ServersListSP.Children.Clear();
-		if(UIManager.Nodes.Length < 1) {
-			this.ServersListSP.Children.Add(new TextBlock() {
+		if(this.UIManager.Nodes is null || this.UIManager.Nodes.Length < 1) {
+			_ = this.ServersListSP.Children.Add(new TextBlock() {
 				Text = "Sorry, there are no servers available.",
 				Margin = new(0, 5, 0, 0),
 				FontWeight = FontWeight.FromOpenTypeWeight(600),
 				FontSize = 18
 			});
+			return;
 		}
-		foreach(var node in UIManager.Nodes) {
+		foreach(var node in this.UIManager.Nodes) {
 			var space = node.Id.ToString().Length > 1 ? "" : " ";
 			// https://www.autoitscript.com/autoit3/docs/appendix/fonts.htm
 			var border = new Border() {
@@ -131,15 +142,15 @@ public partial class MainWindow : Window
 			};
 			block.MouseDown += async (s, e) => {
 				if(e.ClickCount == 2) {
-					WrapperGrid.IsEnabled = false;
-					await UIManager.ConnectToSelectedNode(node.Id);
+					this.WrapperGrid.IsEnabled = false;
+					_ = await this.UIManager.ConnectToSelectedNode(node.Id);
 					await Task.Delay(1000); // TODO: REMOVE IF UNNEEDED
-					WrapperGrid.IsEnabled = true;
+					this.WrapperGrid.IsEnabled = true;
 				}
 			};
 
 			border.Child = block;
-			this.ServersListSP.Children.Add(border);
+			_ = this.ServersListSP.Children.Add(border);
 		}
 	}
 
@@ -149,7 +160,7 @@ public partial class MainWindow : Window
 		this.AuthPanel.Visibility = Visibility.Collapsed;
 		this.TunnelingPanel.Visibility = Visibility.Collapsed;
 
-		switch(UIManager.State) {
+		switch(this.UIManager.State) {
 			case UserInterfaceManager.States.Authentication:
 				this.AuthPanel.Visibility = Visibility.Visible;
 				break;
@@ -162,20 +173,20 @@ public partial class MainWindow : Window
 
 	private async void LoginBT_Click(object sender, RoutedEventArgs e)
 	{
-		onNewAction();
+		this.onNewAction();
 
-		var email = EmailTB.Text;
-		var passwordTB = PasswordTB.Password;
+		var email = this.EmailTB.Text;
+		var passwordTB = this.PasswordTB.Password;
 
 		try {
-			await UIManager.LoginAngRegister(email, passwordTB);
+			_ = await this.UIManager.LoginAngRegister(email, passwordTB);
 		} catch(UserException ex) {
-			AuthErrorTB.Visibility = Visibility.Visible;
-			AuthErrorTB.Text = ex.Message;
+			this.AuthErrorTB.Visibility = Visibility.Visible;
+			this.AuthErrorTB.Text = ex.Message;
 			return;
 		}
 
-		SetVisiblePanel();
+		this.SetVisiblePanel();
 	}
 
 	private void asGuestBT_Click(object sender, RoutedEventArgs e)
@@ -186,10 +197,10 @@ public partial class MainWindow : Window
 
 	protected override async void OnClosing(CancelEventArgs e)
 	{
-		ni.Visible = false;
+		this.ni.Visible = false;
 
 		try {
-			await UIManager.Disconnect();
+			_ = await this.UIManager.EnsureDisconnected();
 		} catch { }
 
 		base.OnClosing(e);
@@ -197,30 +208,29 @@ public partial class MainWindow : Window
 
 	private void EmailTB_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
 	{
-		if(e.Key == Key.Enter) LoginBT_Click(sender, e);
+		if(e.Key == Key.Enter) this.LoginBT_Click(sender, e);
 	}
 
 	private void PasswordTB_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
 	{
-		if(e.Key == Key.Enter) LoginBT_Click(sender, e);
+		if(e.Key == Key.Enter) this.LoginBT_Click(sender, e);
 	}
 
 	private async void LogOutBT_Click(object sender, RoutedEventArgs e)
 	{
-		WrapperGrid.IsEnabled = false;
+		this.WrapperGrid.IsEnabled = false;
 		try {
-			await UIManager.Disconnect();
-			await UIManager.LogOut();
+			_ = await this.UIManager.LogOut();
 			Console.WriteLine("Logged out successfully. ");
 
 			this.SetVisiblePanel();
 		} catch { }
-		WrapperGrid.IsEnabled = true;
+		this.WrapperGrid.IsEnabled = true;
 	}
 
 	protected override void OnStateChanged(EventArgs e)
 	{
-		if(WindowState == System.Windows.WindowState.Minimized)
+		if(this.WindowState == System.Windows.WindowState.Minimized)
 			this.Hide();
 
 		base.OnStateChanged(e);

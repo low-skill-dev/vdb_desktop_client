@@ -1,6 +1,4 @@
-﻿using vdb_node_api.Models.NodeApi;
-
-namespace main_server_api.Models.UserApi.Application.Device;
+﻿namespace ServerQuerier.Models.Device;
 
 public class ConnectDeviceResponse : AddPeerResponse
 {
@@ -23,7 +21,7 @@ public class ConnectDeviceResponse : AddPeerResponse
 		this.WireguardPort = wgPort;
 	}
 	public ConnectDeviceResponse()
-		:base()
+		: base()
 	{
 
 	}

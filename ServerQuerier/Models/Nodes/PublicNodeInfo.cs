@@ -1,4 +1,4 @@
-﻿namespace ServicesLayer.Models.Services;
+﻿namespace ServerQuerier.Models.Nodes;
 
 public class PublicNodeInfo
 {
