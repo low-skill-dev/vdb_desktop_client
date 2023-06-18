@@ -13,7 +13,8 @@ namespace WireguardManipulator;
 public class TunnelManager
 {
 	public static string ApplicationPath => Path.Join(Constants.WorkingDirectory);
-	public static string ConfigPath => Path.Join(ApplicationPath, @"vdb0.conf");
+	public static string PersonalPath => Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "Vdb VPN");
+	public static string ConfigPath => Path.Join(PersonalPath, @"vdb0.conf");
 	public static string KeyPath => Path.Join(ApplicationPath, @"vdb0.key");
 
 	private readonly KeyPair Keys;
@@ -44,26 +45,33 @@ public class TunnelManager
 	}
 
 	public void WriteConfig(ConnectDeviceResponse mainServerResponse)
-	{
+	{		
+		Directory.CreateDirectory(PersonalPath);
 		File.WriteAllText(ConfigPath, ConfigGenerator.GenerateConfig(this.Keys.Private, mainServerResponse));
 	}
-	public void DeleteConfigFiles()
+	public void DeleteAllFiles()
 	{
 		File.Delete(ConfigPath);
 		File.Delete(KeyPath);
+	}
+	public void DeleteConfigFile()
+	{
+		try {
+			File.Delete(ConfigPath);
+		} catch { }
 	}
 
 	public async Task<bool> EstablishTunnel()
 	{
 		if(!File.Exists(ConfigPath)) throw new FileNotFoundException($"Configuration file was not found at {ConfigPath}.");
 
-		var wgResponse = await CommandRunner.RunAsync($"wireguard /installtunnelservice {ConfigPath}");
+		var wgResponse = await CommandRunner.RunAsync($"wireguard /installtunnelservice \"{ConfigPath}\"");
 		return string.IsNullOrWhiteSpace(wgResponse);
 	}
 
 	public async Task<bool> DeleteTunnel()
 	{
 		return string.IsNullOrWhiteSpace(await CommandRunner.RunAsync(
-			$"wireguard /uninstalltunnelservice {Path.GetFileNameWithoutExtension(ConfigPath)}"));
+			$"wireguard /uninstalltunnelservice \"{Path.GetFileNameWithoutExtension(ConfigPath)}\""));
 	}
 }

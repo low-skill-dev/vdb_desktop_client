@@ -197,13 +197,16 @@ public partial class MainWindow : Window
 
 	protected override async void OnClosing(CancelEventArgs e)
 	{
-		this.ni.Visible = false;
-
 		try {
-			_ = await this.UIManager.EnsureDisconnected();
+			this.UIManager.tunnelManager.DeleteConfigFile();
+		} catch { }
+		try {
+			this.ni.Visible = false;
 		} catch { }
 
 		base.OnClosing(e);
+
+		await this.UIManager.EnsureDisconnected();
 	}
 
 	private void EmailTB_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)

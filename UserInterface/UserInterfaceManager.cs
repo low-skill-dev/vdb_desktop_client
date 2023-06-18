@@ -246,7 +246,7 @@ internal sealed class UserInterfaceManager
 			_ = await this.EnsureDisconnected();
 			_ = await this.UnregisterDevice();
 			_ = await this.TerminateSelf();
-			this.tunnelManager.DeleteConfigFiles();
+			this.tunnelManager.DeleteAllFiles();
 			LocalHelper.DeleteRefreshToken();
 			this.State = States.Authentication;
 			return true;

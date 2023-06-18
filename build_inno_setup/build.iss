@@ -1,5 +1,5 @@
 #define MyAppName "Vdb VPN"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.1.1"
 #define MyAppPublisher "Vdb"
 #define MyAppURL "https://vdb.bruhcontent.ru/"
 #define MyAppExeName "UserInterface.exe"
@@ -57,9 +57,14 @@ procedure InstallWg;
 //Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: shellexec runasoriginaluser postinstall waituntilterminated skipifsilent
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{userdocs}\Vdb\refresh.token"
-Type: filesandordirs; Name: "{userdocs}\Vdb\vdb0.conf"
-Type: filesandordirs; Name: "{userdocs}\Vdb\vdb0.key"
-Type: dirifempty; Name: "{userdocs}\Vdb"; 
+Type: filesandordirs; Name: "{userdocs}\Vdb VPN\refresh.token"
+Type: filesandordirs; Name: "{userdocs}\Vdb VPN\vdb0.conf"
+Type: filesandordirs; Name: "{userdocs}\Vdb VPN\vdb0.key"
+Type: dirifempty; Name: "{userdocs}\Vdb VPN"; 
+
+Type: filesandordirs; Name: "{app}\refresh.token"
+Type: filesandordirs; Name: "{app}\vdb0.conf"
+Type: filesandordirs; Name: "{app}\vdb0.key"
+Type: dirifempty; Name: "{app}"; 
 
 
