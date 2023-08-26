@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+		<IsAotCompatible>true</IsAotCompatible>
+		<DebugType>embedded</DebugType>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DeviceId" Version="6.3.0" />
+    <PackageReference Include="DeviceId.Linux" Version="6.3.0" />
+    <PackageReference Include="DeviceId.Mac" Version="6.2.0" />
+    <PackageReference Include="DeviceId.Windows" Version="6.3.0" />
+    <PackageReference Include="DeviceId.Windows.Wmi" Version="6.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EncryptionHelper\CryptoHelper.csproj" />
+  </ItemGroup>
+
+</Project>
