@@ -6,7 +6,8 @@ internal static class CommandRunner
 {
 	public static async Task<string> RunAsync(string command)
 	{
-		try {
+		try
+		{
 			var proc = new Process();
 			var info = new ProcessStartInfo();
 			info.RedirectStandardOutput = true;
@@ -25,14 +26,17 @@ internal static class CommandRunner
 				throw new AggregateException(error);
 
 			return await proc.StandardOutput.ReadToEndAsync();
-		} catch(Exception ex) {
+		}
+		catch(Exception ex)
+		{
 			return ex.Message;
 		}
 	}
 
 	public static string Run(string command)
 	{
-		try {
+		try
+		{
 			var proc = new Process();
 			var info = new ProcessStartInfo();
 			info.RedirectStandardOutput = true;
@@ -51,7 +55,9 @@ internal static class CommandRunner
 				throw new AggregateException(error);
 
 			return proc.StandardOutput.ReadToEnd();
-		} catch(Exception ex) {
+		}
+		catch(Exception ex)
+		{
 			return ex.Message;
 		}
 	}

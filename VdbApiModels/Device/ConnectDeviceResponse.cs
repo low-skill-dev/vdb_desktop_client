@@ -8,7 +8,7 @@ public abstract class AddPeerResponse
 	public string InterfacePublicKey { get; init; }
 }
 
-public abstract class ConnectDeviceResponse: AddPeerResponse
+public abstract class ConnectDeviceResponse : AddPeerResponse
 {
 	public string AddedPeerPublicKey { get; init; }
 	public string ServerIpAddress { get; init; }

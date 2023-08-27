@@ -1,41 +1,46 @@
-﻿using ServerQuerier.Models.Auth;
-using ServerQuerier.Services;
+﻿using ApiModels.Auth;
+using ApiQuerier.Models;
+using ApiQuerier.Services;
+using System.Diagnostics;
 using System.Globalization;
 using System.Net.Http.Json;
 using System.Security.Authentication;
 using System.Security.Claims;
 using System.Text.Json;
-using static ServerQuerier.Helpers.Constants;
+using static ApiQuerier.Helpers.Constants;
+using FilesHelper;
+using static ApiQuerier.Helpers.WebCommon;
 
-namespace ServerQuerier.Helpers;
+namespace ApiQuerier.Helpers;
 
+// refactor 27-08-2023
 
 public static class AuthHelper
 {
-	private static readonly JsonSerializerOptions jsonOptions;
-	private static readonly HttpClientHandler httpHandler;
-	private static readonly HttpClient httpClient;
-	public static bool AutoWriteRefresh { get; set; } = true;
-	public static int LastStatusCode { get; private set; } = -1;
-	static AuthHelper()
+	private static int _lastStatusCode;
+	public static int LastStatusCode
 	{
-		httpHandler = new() {
-			SslProtocols = Environment.OSVersion.Version.Major > 10
-				? SslProtocols.Tls13
-				: SslProtocols.Tls12,
-		};
+		get
+		{
+			return _lastStatusCode;
+		}
+		private set
+		{
+			if(value < 200 || value > 299)		
+				Trace.WriteLine($"Request failed: HTTP_{value}.");
+			else
+				Trace.WriteLine($"Request succeeded: HTTP_{value}.");
 
-		httpClient = new(httpHandler);
-		httpClient.Timeout = TimeSpan.FromSeconds(HttpTimeoutSeconds);
-
-		jsonOptions = new(JsonSerializerDefaults.Web);
+			_lastStatusCode = value;
+		}
 	}
 
 	#region private methods
 
 	private static UserInfo UserInfoFromJwt(IEnumerable<Claim> decoded)
 	{
-		return new UserInfo() {
+		return new UserInfo()
+		{
 			Id = int.Parse(decoded.First(x => x.Type.Equals(nameof(UserInfo.Id))).Value),
 			Email = decoded.First(x => x.Type.Equals(nameof(UserInfo.Email))).Value
 				?? throw new ArgumentNullException(nameof(UserInfo.Email)),
@@ -46,9 +51,9 @@ public static class AuthHelper
 		};
 	}
 
-	private static async Task<AuthResult> DecodeJwtResponse(JwtResponse response)
+	private static AuthResult DecodeJwtResponse(JwtResponse response)
 	{
-		if(response.RefreshToken is null) // server must provide refresh
+		if(string.IsNullOrWhiteSpace(response.RefreshToken)) // server must provide refresh
 			throw new ArgumentException(nameof(response.RefreshToken));
 
 		var accessToken = response.AccessToken;
@@ -57,71 +62,113 @@ public static class AuthHelper
 		var decoded = JwtService.ValidateJwtToken(accessToken,
 			out var validTo, out var notBefore, out var issuedAt)!;
 
-		var jwtInfo = new JwtInfo(notBefore, validTo, issuedAt);
+		var jwtInfo = new JwtInfo
+		{
+			Nbf = notBefore,
+			Exp = validTo,
+			Iat = issuedAt,
+		};
+
 		var userInfo = UserInfoFromJwt(decoded);
 
-		if(AutoWriteRefresh) await LocalHelper.WriteRefreshToken(refreshToken);
+		// we always write latest token into the file
+		TokenFilesHelper.WriteRefreshToken(refreshToken);
 
-		return new(jwtInfo, userInfo, accessToken, refreshToken);
+		return new()
+		{
+			JwtInfo = jwtInfo,
+			UserInfo = userInfo,
+			AccessToken = accessToken,
+			RefreshToken = refreshToken,
+		};
 	}
 
-	#endregion
-
-	public static async Task<AuthResult?> Authenticate(LoginRequest request)
+	private static async Task<AuthResult?> Refresh(RefreshJwtRequest request)
 	{
-		try {
-			Console.WriteLine("Begin authentication...");
+		Trace.WriteLine($"{nameof(Refresh)} started.");
 
-			var response = await httpClient.PostAsync(
-				HostPathTls + ApiBasePath + AuthPath + QueryStartString + RefreshJwtInBodyQuery,
-				JsonContent.Create(request, options: jsonOptions));
-
-			LastStatusCode = (int)response.StatusCode;
-
-			Console.WriteLine($"Auth endpoint responded with {response.StatusCode} status code.");
-
-			if(!response.IsSuccessStatusCode) return null;
-
-			var jwtResponse = (await response.Content.ReadFromJsonAsync<JwtResponse>(jsonOptions))!;
-
-			var result = await DecodeJwtResponse(jwtResponse);
-			_ = await ApiHelperTransient.Create(result);
-			return result;
-		} catch {
-			return null;
-		}
-	}
-
-	private static async Task<AuthResult?> Refresh(RefreshJwtRequest request) // made it private only becouse was not used outside
-	{
-		try {
-			Console.WriteLine("Begin refresh...");
-
+		try
+		{
 			var response = await httpClient.PatchAsync(
 				HostPathTls + ApiBasePath + AuthPath + QueryStartString + RefreshJwtInBodyQuery,
 				JsonContent.Create(request, options: jsonOptions));
 
 			LastStatusCode = (int)response.StatusCode;
 
-			Console.WriteLine($"Refresh endpoint responded with {response.StatusCode} status code.");
-
-			if(!response.IsSuccessStatusCode) return null;
+			if(!response.IsSuccessStatusCode)
+			{
+				Trace.WriteLine($"{nameof(Refresh)} failed.");
+				return null;
+			}
 
 			var jwtResponse = (await response.Content.ReadFromJsonAsync<JwtResponse>(jsonOptions))!;
 
-			return await DecodeJwtResponse(jwtResponse);
-		} catch {
+			return DecodeJwtResponse(jwtResponse);
+		}
+		catch(Exception e)
+		{
+			Trace.WriteLine($"{nameof(Refresh)} failed: {e.Message}.");
+			return null;
+		}
+	}
+
+	#endregion
+
+	// This method is used by external projects, e.g. UI to send credentials to the server
+	public static async Task<AuthResult?> Authenticate(LoginRequest request)
+	{
+		Trace.WriteLine($"{nameof(Authenticate)} started.");
+
+		try
+		{
+			var response = await httpClient.PostAsync(
+				HostPathTls + ApiBasePath + AuthPath + QueryStartString 
+				+ RefreshJwtInBodyQuery + QueryAndString + RedirectToLoginQuery,
+				JsonContent.Create(request, options: jsonOptions));
+
+			LastStatusCode = (int)response.StatusCode;
+
+			if(!response.IsSuccessStatusCode)
+			{
+				Trace.WriteLine($"{nameof(Authenticate)} failed.");
+				return null;
+			}
+
+			var jwtResponse = (await response.Content.ReadFromJsonAsync<JwtResponse>(jsonOptions))!;
+
+			var result = DecodeJwtResponse(jwtResponse);
+			await ApiHelperTransient.Create(result); // go to implementation for details of this call
+			return result;
+		}
+		catch(Exception e)
+		{
+			Trace.WriteLine($"{nameof(Authenticate)} failed: {e.Message}.");
 			return null;
 		}
 	}
 
 	public static async Task<AuthResult?> RefreshUsingLocalToken()
 	{
-		var token = await LocalHelper.ReadRefreshToken();
-		if(token is null) return null;
+		Trace.WriteLine($"{nameof(RefreshUsingLocalToken)} started.");
+
+		var token = TokenFilesHelper.ReadRefreshToken();
+		if(string.IsNullOrWhiteSpace(token))
+		{
+			Trace.WriteLine($"{nameof(RefreshUsingLocalToken)} failed: local token not found.");
+			return null;
+		}
 
 		var result = await Refresh(new() { RefreshToken = token });
-		if(result is null) LocalHelper.DeleteRefreshToken();
+
+		var code = LastStatusCode;
+		if(result is null)
+		{
+			// if refresh failed client-side, delete obsolete token
+			if((code >= 400 || code <= 499) && code != 429)
+				TokenFilesHelper.DeleteRefreshToken();
+
+			Trace.WriteLine($"{nameof(RefreshUsingLocalToken)} failed.");
+		}
 
 		return result;
 	}

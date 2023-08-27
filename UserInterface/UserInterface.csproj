@@ -9,6 +9,7 @@
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>favicon256.ico</ApplicationIcon>
+		<PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -29,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ServerQuerier\ServerQuerier.csproj" />
+    <ProjectReference Include="..\ServerQuerier\ApiQuerier.csproj" />
     <ProjectReference Include="..\WireguardManipulator\WireguardManipulator.csproj" />
   </ItemGroup>
 

@@ -51,7 +51,8 @@ public static class TokenFilesHelper
 
 			const string oldTokenStart = @"eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.";
 
-			if(!string.IsNullOrWhiteSpace(oldToken) && oldToken.StartsWith(oldTokenStart)) {
+			if(!string.IsNullOrWhiteSpace(oldToken) && oldToken.StartsWith(oldTokenStart))
+			{
 				WriteRefreshToken(oldToken);
 				File.Delete(oldToken);
 			}

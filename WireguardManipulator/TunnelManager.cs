@@ -1,5 +1,4 @@
-﻿using ServerQuerier.Helpers;
-using ServerQuerier.Models.Device;
+﻿using ApiQuerier.Helpers;
 
 namespace WireguardManipulator;
 
@@ -28,7 +27,8 @@ public class TunnelManager
 	private static KeyPair CreatePair()
 	{
 		KeyPair keys;
-		try {
+		try
+		{
 			var pk = File.ReadAllText(KeyPath).Trim("\r\n\t,; ".ToCharArray());
 			var strictBytesCount = 256 / 8;
 			if(string.IsNullOrWhiteSpace(pk) ||
@@ -36,7 +36,9 @@ public class TunnelManager
 				bytesCount != strictBytesCount) throw new FormatException();
 
 			keys = new(pk);
-		} catch {
+		}
+		catch
+		{
 			keys = new KeyPair();
 			File.WriteAllText(KeyPath, keys.Private);
 		}
@@ -45,7 +47,7 @@ public class TunnelManager
 	}
 
 	public void WriteConfig(ConnectDeviceResponse mainServerResponse)
-	{		
+	{
 		Directory.CreateDirectory(PersonalPath);
 		File.WriteAllText(ConfigPath, ConfigGenerator.GenerateConfig(this.Keys.Private, mainServerResponse));
 	}
@@ -56,9 +58,11 @@ public class TunnelManager
 	}
 	public void DeleteConfigFile()
 	{
-		try {
+		try
+		{
 			File.Delete(ConfigPath);
-		} catch { }
+		}
+		catch { }
 	}
 
 	public async Task<bool> EstablishTunnel()

@@ -38,16 +38,16 @@ public partial class MainWindow : Window
 #if DEBUG
 		AllocConsole();
 #endif
-		Console.WriteLine("Console is alloced.");
+		Trace.WriteLine("Console is alloced.");
 
 		this.UIManager = new();
 		this.UIManager.StateChanged += (state) => {
 			this.Dispatcher.Invoke(() =>
-				Console.WriteLine($"\nState changed to: {this.UIManager.State}.\n"));
+				Trace.WriteLine($"\nState changed to: {this.UIManager.State}.\n"));
 		};
 
 		this.InitializeComponent();
-		Console.WriteLine("Inited components.");
+		Trace.WriteLine("Inited components.");
 
 		#region minimized icon creator
 		var Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath);
@@ -60,7 +60,7 @@ public partial class MainWindow : Window
 				this.WindowState = WindowState.Normal;
 			}
 		!;
-		Console.WriteLine("Created icons.");
+		Trace.WriteLine("Created icons.");
 		#endregion
 	}
 	private void onNewAction()
@@ -72,7 +72,7 @@ public partial class MainWindow : Window
 	protected override async void OnInitialized(EventArgs e)
 	{
 		base.OnInitialized(e);
-		Console.WriteLine("OnInitialized called.");
+		Trace.WriteLine("OnInitialized called.");
 		this.UIManager.StateChanged += (state) => this.Dispatcher.Invoke(this.SetVisiblePanel);
 		this.UIManager.StateChanged += (state) => {
 			if(state != UserInterfaceManager.States.Authentication) {
@@ -82,7 +82,7 @@ public partial class MainWindow : Window
 		this.AuthPanel.Visibility = Visibility.Collapsed;
 		this.TunnelingPanel.Visibility = Visibility.Collapsed;
 
-		Console.WriteLine("Trying to load user.");
+		Trace.WriteLine("Trying to load user.");
 		_ = await this.UIManager.TryLoadUser();
 
 		this.UIManager.ActiveNodeChanged += (nodeId) => {
@@ -224,7 +224,7 @@ public partial class MainWindow : Window
 		this.WrapperGrid.IsEnabled = false;
 		try {
 			_ = await this.UIManager.LogOut();
-			Console.WriteLine("Logged out successfully. ");
+			Trace.WriteLine("Logged out successfully. ");
 
 			this.SetVisiblePanel();
 		} catch { }

@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ServerQuerier\ServerQuerier.csproj" />
+    <ProjectReference Include="..\ServerQuerier\ApiQuerier.csproj" />
   </ItemGroup>
 
 </Project>

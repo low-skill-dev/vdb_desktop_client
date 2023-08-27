@@ -3,19 +3,24 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerQuerier", "ServerQuerier\ServerQuerier.csproj", "{C804FD61-A990-4363-82D2-C7C6CCD024DE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApiQuerier", "ServerQuerier\ApiQuerier.csproj", "{C804FD61-A990-4363-82D2-C7C6CCD024DE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UserInterface", "UserInterface\UserInterface.csproj", "{2E2061FA-630C-479C-BA4C-7D1A1CDDA80C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UserInterface", "UserInterface\UserInterface.csproj", "{2E2061FA-630C-479C-BA4C-7D1A1CDDA80C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WireguardManipulator", "WireguardManipulator\WireguardManipulator.csproj", "{D621D4B3-6967-466E-93CB-75D29557D4DB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WireguardManipulator", "WireguardManipulator\WireguardManipulator.csproj", "{D621D4B3-6967-466E-93CB-75D29557D4DB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApiModels", "VdbApiModels\ApiModels.csproj", "{B3966DFD-7642-4CAA-A61D-5255BA47D4AE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FilesHelper", "FilesHelper\FilesHelper.csproj", "{F4E74772-82A9-48BC-93D3-393035FCDB07}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoHelper", "CryptoHelper\CryptoHelper.csproj", "{232B54D7-5FFD-4F2E-80FA-5F164082421E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "desktop_client.Tests", "desktop_client.Tests\desktop_client.Tests.csproj", "{9EAFE7EA-EBA4-4B92-8FEB-850D6A92FC75}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{C804FD61-A990-4363-82D2-C7C6CCD024DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -30,5 +35,27 @@ Global
 		{D621D4B3-6967-466E-93CB-75D29557D4DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D621D4B3-6967-466E-93CB-75D29557D4DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D621D4B3-6967-466E-93CB-75D29557D4DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3966DFD-7642-4CAA-A61D-5255BA47D4AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3966DFD-7642-4CAA-A61D-5255BA47D4AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3966DFD-7642-4CAA-A61D-5255BA47D4AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3966DFD-7642-4CAA-A61D-5255BA47D4AE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4E74772-82A9-48BC-93D3-393035FCDB07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4E74772-82A9-48BC-93D3-393035FCDB07}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4E74772-82A9-48BC-93D3-393035FCDB07}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4E74772-82A9-48BC-93D3-393035FCDB07}.Release|Any CPU.Build.0 = Release|Any CPU
+		{232B54D7-5FFD-4F2E-80FA-5F164082421E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{232B54D7-5FFD-4F2E-80FA-5F164082421E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{232B54D7-5FFD-4F2E-80FA-5F164082421E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{232B54D7-5FFD-4F2E-80FA-5F164082421E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9EAFE7EA-EBA4-4B92-8FEB-850D6A92FC75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9EAFE7EA-EBA4-4B92-8FEB-850D6A92FC75}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9EAFE7EA-EBA4-4B92-8FEB-850D6A92FC75}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9EAFE7EA-EBA4-4B92-8FEB-850D6A92FC75}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {68AC2973-9891-4336-94CC-75BA3E115320}
 	EndGlobalSection
 EndGlobal

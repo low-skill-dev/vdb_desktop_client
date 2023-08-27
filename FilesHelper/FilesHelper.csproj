@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CryptoHelper\CryptoHelper.csproj" />
     <ProjectReference Include="..\EncryptionHelper\CryptoHelper.csproj" />
   </ItemGroup>
 

@@ -13,7 +13,7 @@ public static class StringCryptography
 		var encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
 		var memoryStream = new MemoryStream();
 		var cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write);
-		var streamWriter = new StreamWriter((Stream)cryptoStream);
+		var streamWriter = new StreamWriter(cryptoStream);
 		streamWriter.Write(plainText);
 
 		return Convert.ToHexString(memoryStream.ToArray());

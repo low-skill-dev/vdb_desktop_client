@@ -1,6 +1,6 @@
-﻿using ServerQuerier.Helpers;
-using ServerQuerier.Models.Auth;
-using ServerQuerier.Models.Nodes;
+﻿using ApiQuerier.Helpers;
+using ApiQuerier.Models.Auth;
+using ApiQuerier.Models.Nodes;
 using UserInterface.Services;
 using WireguardManipulator;
 
@@ -64,7 +64,7 @@ internal sealed class UserInterfaceManager
 		this.State = 0;
 		this.tunnelManager = new();
 
-		Console.WriteLine("Trying to load user from local storage...");
+		Trace.WriteLine("Trying to load user from local storage...");
 
 		ApiHelperTransient.AuthorizationFailed += () => { this.State = States.Authentication; };
 	}
@@ -183,7 +183,7 @@ internal sealed class UserInterfaceManager
 
 		this.UserInfo = response.UserInfo;
 
-		Console.WriteLine("Authenticated successfully.");
+		Trace.WriteLine("Authenticated successfully.");
 		this.State = States.Registering;
 
 		return true;

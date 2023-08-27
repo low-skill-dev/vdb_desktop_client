@@ -1,7 +1,9 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
-namespace ServerQuerier.Services;
+namespace ApiQuerier.Services;
+
+// refactor 27-08-2023
 
 public static class JwtService
 {
@@ -10,14 +12,15 @@ public static class JwtService
 		out DateTime NotBefore,
 		out DateTime IssuedAt)
 	{
-		var readed = new JwtSecurityTokenHandler().ReadJwtToken(token);
-		ValidTo = readed.ValidTo;
-		NotBefore = readed.ValidFrom;
-		IssuedAt = readed.IssuedAt;
+		var read = new JwtSecurityTokenHandler().ReadJwtToken(token);
 
-		// consider invalidate if less than 10 seconds lifetime left
-		if(readed.ValidTo > DateTime.UtcNow.AddSeconds(+10)) {
-			return readed.Claims;
+		ValidTo = read.ValidTo;
+		NotBefore = read.ValidFrom;
+		IssuedAt = read.IssuedAt;
+
+		// consider invalidate if less than 5 seconds lifetime left
+		if(read.ValidTo > DateTime.UtcNow.AddSeconds(+5)) {
+			return read.Claims;
 		} else {
 			return null;
 		}

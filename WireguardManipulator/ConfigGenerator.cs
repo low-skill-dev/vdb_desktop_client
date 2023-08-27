@@ -1,5 +1,4 @@
-﻿using ServerQuerier.Models.Device;
-using System.Text;
+﻿using System.Text;
 
 namespace WireguardManipulator;
 
