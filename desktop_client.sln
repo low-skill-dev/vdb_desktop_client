@@ -15,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FilesHelper", "FilesHelper\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoHelper", "CryptoHelper\CryptoHelper.csproj", "{232B54D7-5FFD-4F2E-80FA-5F164082421E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "desktop_client.Tests", "desktop_client.Tests\desktop_client.Tests.csproj", "{9EAFE7EA-EBA4-4B92-8FEB-850D6A92FC75}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{15AB198E-A6ED-42CA-A7C0-05303490DED7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,10 +47,10 @@ Global
 		{232B54D7-5FFD-4F2E-80FA-5F164082421E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{232B54D7-5FFD-4F2E-80FA-5F164082421E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{232B54D7-5FFD-4F2E-80FA-5F164082421E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9EAFE7EA-EBA4-4B92-8FEB-850D6A92FC75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9EAFE7EA-EBA4-4B92-8FEB-850D6A92FC75}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9EAFE7EA-EBA4-4B92-8FEB-850D6A92FC75}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9EAFE7EA-EBA4-4B92-8FEB-850D6A92FC75}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15AB198E-A6ED-42CA-A7C0-05303490DED7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15AB198E-A6ED-42CA-A7C0-05303490DED7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15AB198E-A6ED-42CA-A7C0-05303490DED7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15AB198E-A6ED-42CA-A7C0-05303490DED7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

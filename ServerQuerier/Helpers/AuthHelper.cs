@@ -114,8 +114,13 @@ public static class AuthHelper
 
 	#endregion
 
+	public static async Task Authenticate(string login, string password)
+	{
+		await Authenticate(new LoginRequest { Email = login, Password = password });
+	}
+
 	// This method is used by external projects, e.g. UI to send credentials to the server
-	public static async Task<AuthResult?> Authenticate(LoginRequest request)
+	internal static async Task<AuthResult?> Authenticate(LoginRequest request)
 	{
 		Trace.WriteLine($"{nameof(Authenticate)} started.");
 
@@ -147,7 +152,7 @@ public static class AuthHelper
 		}
 	}
 
-	public static async Task<AuthResult?> RefreshUsingLocalToken()
+	internal static async Task<AuthResult?> RefreshUsingLocalToken()
 	{
 		Trace.WriteLine($"{nameof(RefreshUsingLocalToken)} started.");
 

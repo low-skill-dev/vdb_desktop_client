@@ -12,13 +12,12 @@
     <PackageReference Include="DeviceId" Version="6.3.0" />
     <PackageReference Include="DeviceId.Linux" Version="6.3.0" />
     <PackageReference Include="DeviceId.Mac" Version="6.2.0" />
-    <PackageReference Include="DeviceId.Windows" Version="6.3.0" />
-    <PackageReference Include="DeviceId.Windows.Wmi" Version="6.2.1" />
+    <PackageReference Include="DeviceId.Windows" Version="6.4.0" />
+    <PackageReference Include="DeviceId.Windows.Wmi" Version="6.4.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CryptoHelper\CryptoHelper.csproj" />
-    <ProjectReference Include="..\EncryptionHelper\CryptoHelper.csproj" />
   </ItemGroup>
 
 </Project>
