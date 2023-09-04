@@ -1,0 +1,32 @@
+						Aes256gcm_StackAllocVsHeapAlloc
+
+
+						1 KByte string
+|        Method |     Mean |     Error |    StdDev |   Median |   Gen0 | Allocated |
+|-------------- |---------:|----------:|----------:|---------:|-------:|----------:|
+| AesStackAlloc | 8.360 us | 0.1771 us | 0.5221 us | 8.197 us | 1.6479 |   3.38 KB |
+|  AesHeapAlloc | 4.852 us | 0.0942 us | 0.1008 us | 4.844 us | 2.8076 |   5.74 KB |
+
+						4 KByte string
+|        Method |      Mean |     Error |    StdDev |    Gen0 | Allocated |
+|-------------- |----------:|----------:|----------:|--------:|----------:|
+| AesStackAlloc | 21.029 us | 0.3769 us | 0.3526 us |  6.0425 |  12.38 KB |
+|  AesHeapAlloc |  7.438 us | 0.1142 us | 0.1012 us | 10.1471 |  20.74 KB |
+
+						16 KByte string
+|        Method |     Mean |    Error |   StdDev |    Gen0 | Allocated |
+|-------------- |---------:|---------:|---------:|--------:|----------:|
+| AesStackAlloc | 73.20 us | 0.667 us | 0.624 us | 23.4375 |  48.39 KB |
+|  AesHeapAlloc | 18.78 us | 0.375 us | 0.847 us | 39.2151 |  80.75 KB |
+
+						64 KByte string
+|        Method |     Mean |   Error |  StdDev |     Gen0 |    Gen1 |    Gen2 | Allocated |
+|-------------- |---------:|--------:|--------:|---------:|--------:|--------:|----------:|
+| AesStackAlloc | 337.8 us | 6.07 us | 8.90 us |  41.5039 | 41.5039 | 41.5039 | 192.41 KB |
+|  AesHeapAlloc | 145.3 us | 2.88 us | 5.41 us | 124.7559 | 41.5039 | 41.5039 | 320.78 KB |
+
+						256 KByte string
+|        Method |       Mean |    Error |   StdDev |     Gen0 |     Gen1 |     Gen2 |  Allocated |
+|-------------- |-----------:|---------:|---------:|---------:|---------:|---------:|-----------:|
+| AesStackAlloc | 1,345.1 us |  9.87 us |  8.75 us | 248.0469 | 248.0469 | 248.0469 |  768.52 KB |
+|  AesHeapAlloc |   573.1 us | 11.45 us | 27.21 us | 399.4141 | 399.4141 | 399.4141 | 1280.96 KB |

@@ -1,4 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Unicode;
+using System.Threading.Tasks;
+using System;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Security.Cryptography;
@@ -6,9 +13,12 @@ using System.Text;
 using System.Text.Unicode;
 using static System.Text.Encoding;
 using Convert = System.Convert;
+
+
 namespace CryptoHelper;
 
-public static class StringCryptography
+
+public static class StringCryptocraphyNoStackAlloc
 {
 	private const int keySizeInBytes = 256 / 8;
 	private const int tagSizeInBytes = 128 / 8;
@@ -28,21 +38,14 @@ public static class StringCryptography
 	/// <returns>In-stack encrypted string.</returns>
 	public static StringEncryptionResult EncryptString(ReadOnlySpan<byte> keyBytes, string plainText)
 	{
-		//if(plainText.Length > 70 * 1024) // allow up to 64 kbyte hex string
-		//	throw new OutOfMemoryException("Too big string was passed to the method.");
+		byte[] key = SHA256.HashData(keyBytes);
 
-		Span<byte> key = stackalloc byte[keySizeInBytes];
-		SHA256.HashData(keyBytes, key);
-
-		var rnd = RandomNumberGenerator.Create();
 		var aes = new AesGcm(key, tagSizeInBytes);
 
-		Span<byte> plain = stackalloc byte[UTF8.GetByteCount(plainText)];
-		Span<byte> cipher = stackalloc byte[plainText.Length];
-		Span<byte> nonce = stackalloc byte[nonceSizeInBytes];
-		Span<byte> tag = stackalloc byte[tagSizeInBytes];
-		UTF8.GetBytes(plainText, plain);
-		rnd.GetBytes(nonce);
+		byte[] plain = UTF8.GetBytes(plainText);
+		byte[] cipher = new byte[plainText.Length];
+		byte[] nonce = RandomNumberGenerator.GetBytes(nonceSizeInBytes);
+		byte[] tag = new byte[tagSizeInBytes];
 
 		aes.Encrypt(nonce, plain, cipher, tag);
 
@@ -60,26 +63,19 @@ public static class StringCryptography
 
 	private static void Utf8HexToBytes(ReadOnlySpan<char> hex, Span<byte> buf)
 	{
-		for(int i = 0; i < hex.Length; i+=2)
-			buf[i/2] = Convert.ToByte((((0 << 4) 
-				| (hex[i] - (hex[i]<='9' ? '0' : ('A'-10))) << 4) 
-				| (hex[i+1] - (hex[i+1] <= '9' ? '0' : ('A' -10)))));
+		for(int i = 0; i < hex.Length; i += 2)
+			buf[i / 2] = Convert.ToByte((((0 << 4)
+				| (hex[i] - (hex[i] <= '9' ? '0' : ('A' - 10))) << 4)
+				| (hex[i + 1] - (hex[i + 1] <= '9' ? '0' : ('A' - 10)))));
 	}
 
 	public static string DecryptString(ReadOnlySpan<byte> keyBytes, string hexCipher, string hexNonce, string hexTag)
 	{
-		//if(hexCipher.Length > 70 * 1024) // allow up to 64 kbyte hex string
-		//	throw new OutOfMemoryException("Too big string was passed to the method.");
-
-		Span<byte> key = stackalloc byte[keySizeInBytes];
-		Span<byte> plain = stackalloc byte[hexCipher.Length / 2];
-		Span<byte> cipher = stackalloc byte[hexCipher.Length / 2];
-		Span<byte> nonce = stackalloc byte[hexNonce.Length / 2];
-		Span<byte> tag = stackalloc byte[hexTag.Length / 2];
-		Utf8HexToBytes(hexCipher, cipher);
-		Utf8HexToBytes(hexNonce, nonce);
-		Utf8HexToBytes(hexTag, tag);
-		SHA256.HashData(keyBytes, key);
+		Span<byte> key = SHA256.HashData(keyBytes);
+		Span<byte> plain = Convert.FromHexString(hexCipher);
+		Span<byte> cipher = Convert.FromHexString(hexCipher);
+		Span<byte> nonce = Convert.FromHexString(hexNonce);
+		Span<byte> tag = Convert.FromHexString(hexTag);
 
 		var aes = new AesGcm(key, tagSizeInBytes);
 

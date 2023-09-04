@@ -16,7 +16,7 @@ public class StringCryptography
 		@"J6rPJKn9kIDaRKk5x7pkugiYPBVDh2DrWFdYziXelRNYloChVYifDA";
 
 	[Fact]
-	public void CanEncryptAndDecrypt1()
+	public void CanEncryptAndDecrypt()
 	{
 		var testTokenFile = Path.GetTempFileName();
 		var testKeyFile = Path.GetTempFileName();
@@ -44,13 +44,51 @@ public class StringCryptography
 	}
 
 	[Fact]
-	public void CanEncryptAndDecrypt2()
+	public void CanEncryptAndDecryptFromFile()
 	{
 		TokenFilesHelper.WriteRefreshToken(testToken);
 
 		var read = TokenFilesHelper.ReadRefreshToken();
 
 		Assert.Equal(testToken, read);
+	}
+
+	[Fact]
+	public void CanEncryptAndDecrypRandom()
+	{
+		var rnd = RandomNumberGenerator.Create();
+
+		var len = RandomNumberGenerator.GetInt32(128,2048);
+
+		var bytes = new object[len].Select(x=> Convert.ToByte(RandomNumberGenerator.GetInt32(48,91))).ToArray();
+
+		var str = Encoding.UTF8.GetString(Encoding.Convert(Encoding.UTF8,Encoding.ASCII, bytes));
+
+		var testToken = str;
+
+		var testTokenFile = Path.GetTempFileName();
+		var testKeyFile = Path.GetTempFileName();
+
+		var key = SHA512.HashData(Encoding.UTF8.GetBytes(
+			new DeviceIdBuilder()
+				.OnWindows(windows => windows
+					.AddMotherboardSerialNumber()
+					.AddSystemDriveSerialNumber())
+				.OnLinux(linux => linux
+					.AddMotherboardSerialNumber()
+					.AddSystemDriveSerialNumber())
+				.OnMac(mac => mac
+					.AddPlatformSerialNumber()
+					.AddSystemDriveSerialNumber())
+				.AddFileToken(testKeyFile)
+				.ToString()
+		));
+
+		var encrypted = CryptoHelper.StringCryptography.EncryptString(key, testToken);
+
+		var dectypted = CryptoHelper.StringCryptography.DecryptString(key, encrypted);
+
+		Assert.Equal(testToken, dectypted);
 	}
 
 }
