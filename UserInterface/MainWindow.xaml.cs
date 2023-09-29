@@ -13,6 +13,10 @@ public partial class MainWindow : Window
 {
 	private readonly UserInterfaceManager UIManager;
 	private readonly System.Windows.Forms.NotifyIcon ni;
+
+	private System.Drawing.Icon InactiveIcon;
+	private System.Drawing.Icon ActiveIcon;
+
 	[DllImport("kernel32")] private static extern bool AllocConsole();
 	[DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 	[DllImport("User32.dll")] private static extern bool SetForegroundWindow(IntPtr hWnd);
@@ -38,29 +42,43 @@ public partial class MainWindow : Window
 #if DEBUG
 		AllocConsole();
 #endif
-		Trace.WriteLine("Console is alloced.");
+		Console.WriteLine("Console is alloced.");
 
 		this.UIManager = new();
 		this.UIManager.StateChanged += (state) => {
 			this.Dispatcher.Invoke(() =>
-				Trace.WriteLine($"\nState changed to: {this.UIManager.State}.\n"));
+				Console.WriteLine($"\nState changed to: {this.UIManager.State}.\n"));
 		};
 
 		this.InitializeComponent();
-		Trace.WriteLine("Inited components.");
+		Console.WriteLine("Inited components.");
 
 		#region minimized icon creator
-		var Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath);
+		this.InactiveIcon = System.Drawing.Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath)!;
+		var t = this.InactiveIcon.ToBitmap();
+		ChangeBlueToRedOnBitmap(t);
+		this.ActiveIcon =  System.Drawing.Icon.FromHandle(t.GetHicon());
 		this.ni = new System.Windows.Forms.NotifyIcon();
-		this.ni.Icon = Icon;
+		this.ni.Icon = InactiveIcon;
+		this.ni.Text = "Disconnected.";
 		this.ni.Visible = true;
-		this.ni.DoubleClick +=
-			delegate (object sender, EventArgs args) {
-				this.Show();
-				this.WindowState = WindowState.Normal;
+		this.ni.MouseClick +=
+			delegate (object sender, System.Windows.Forms.MouseEventArgs args) {
+				if(args.Clicks != 1) return;
+				if(this.WindowState == WindowState.Minimized)
+				{
+					this.Show();
+					this.WindowState = WindowState.Normal;
+				}
+				else
+				{
+					this.Hide();
+					this.WindowState = WindowState.Minimized;
+				}
 			}
 		!;
-		Trace.WriteLine("Created icons.");
+		this.ni.MouseDoubleClick += this.OnIconSwitchClick;
+		Console.WriteLine("Created icons.");
 		#endregion
 	}
 	private void onNewAction()
@@ -68,11 +86,28 @@ public partial class MainWindow : Window
 		this.AuthErrorTB.Visibility = Visibility.Hidden;
 		this.AuthErrorTB.Text = string.Empty;
 	}
+	private void ChangeBlueToRedOnBitmap(Bitmap blueBm)
+	{
+		DateTime start = DateTime.UtcNow;
+		for(int w = 0; w < blueBm.Width; w++)
+		{
+			for(int h = 0; h< blueBm.Height; h++)
+			{
+				var p = blueBm.GetPixel(w, h);
+				if(p.B > 250 && p.R < 50 && p.G < 50)
+				{
+					blueBm.SetPixel(w,h,System.Drawing.Color.FromArgb(255,255,0,0));
+				}
+			}
+		}
+
+		Console.WriteLine($"Took {(DateTime.UtcNow - start).TotalMilliseconds.ToString("0.00")} ms to created active icon.");
+	}
 
 	protected override async void OnInitialized(EventArgs e)
 	{
 		base.OnInitialized(e);
-		Trace.WriteLine("OnInitialized called.");
+		Console.WriteLine("OnInitialized called.");
 		this.UIManager.StateChanged += (state) => this.Dispatcher.Invoke(this.SetVisiblePanel);
 		this.UIManager.StateChanged += (state) => {
 			if(state != UserInterfaceManager.States.Authentication) {
@@ -82,7 +117,7 @@ public partial class MainWindow : Window
 		this.AuthPanel.Visibility = Visibility.Collapsed;
 		this.TunnelingPanel.Visibility = Visibility.Collapsed;
 
-		Trace.WriteLine("Trying to load user.");
+		Console.WriteLine("Trying to load user.");
 		_ = await this.UIManager.TryLoadUser();
 
 		this.UIManager.ActiveNodeChanged += (nodeId) => {
@@ -103,10 +138,42 @@ public partial class MainWindow : Window
 			} catch { }
 		};
 
+		this.UIManager.ActiveNodeChanged += (_) => SetProperIcon();
+
 		this.SetVisiblePanel();
 	}
 
-
+	private async void OnIconSwitchClick(object? sender, EventArgs args)
+	{
+		try
+		{
+			this.WrapperGrid.IsEnabled = false;
+			await this.UIManager.ConnectToSelectedNode(await this.UIManager.LastConnectedNode());
+		}
+		finally
+		{
+			this.WrapperGrid.IsEnabled = true;
+		}
+	}
+	private void SetProperIcon()
+	{
+		if(this.UIManager.CurrentlyConnectedNode is null)
+		{
+			this.ni.Icon = InactiveIcon;
+			this.ni.Text = "Disconnected.";
+		}
+		else
+		{
+			this.ni.Icon = ActiveIcon;
+			string text = "Connected.";
+			try
+			{
+				text = $"Connected to \'{this.UIManager.Nodes.Single(x=> x.Id == this.UIManager.CurrentlyConnectedNode).Name}\'";
+			}
+			catch { }
+			this.ni.Text = text;
+		}
+	}
 	private async void OnAuthed()
 	{
 		if(this.UIManager.Nodes is null) {
@@ -224,7 +291,7 @@ public partial class MainWindow : Window
 		this.WrapperGrid.IsEnabled = false;
 		try {
 			_ = await this.UIManager.LogOut();
-			Trace.WriteLine("Logged out successfully. ");
+			Console.WriteLine("Logged out successfully. ");
 
 			this.SetVisiblePanel();
 		} catch { }

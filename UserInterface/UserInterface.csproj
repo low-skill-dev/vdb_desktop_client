@@ -9,7 +9,6 @@
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>favicon256.ico</ApplicationIcon>
-		<PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -26,12 +25,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.29.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ServerQuerier\ApiQuerier.csproj" />
+    <ProjectReference Include="..\ApiModels\ApiModels.csproj" />
+    <ProjectReference Include="..\ApiQuerier\ApiQuerier.csproj" />
     <ProjectReference Include="..\WireguardManipulator\WireguardManipulator.csproj" />
   </ItemGroup>
 
 </Project>
+

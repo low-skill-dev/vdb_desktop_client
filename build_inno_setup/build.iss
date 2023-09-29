@@ -1,9 +1,9 @@
 #define MyAppName "Vdb VPN"
-#define MyAppVersion "1.1.1"
+#define MyAppVersion "1.2.0"
 #define MyAppPublisher "Vdb"
 #define MyAppURL "https://vdb.bruhcontent.ru/"
 #define MyAppExeName "UserInterface.exe"
-#define DotNetFileName "windowsdesktop-runtime-8.0.0-preview.3.23178.1-win-x64.exe";
+#define DotNetFileName "windowsdesktop-runtime-8.0.0-rc.1.23420.5-win-x64.exe";
 #define WgFileName "wireguard-amd64-0.5.3.msi";
 
 [Setup]
@@ -62,9 +62,14 @@ Type: filesandordirs; Name: "{userdocs}\Vdb VPN\vdb0.conf"
 Type: filesandordirs; Name: "{userdocs}\Vdb VPN\vdb0.key"
 Type: dirifempty; Name: "{userdocs}\Vdb VPN"; 
 
-Type: filesandordirs; Name: "{app}\refresh.token"
 Type: filesandordirs; Name: "{app}\vdb0.conf"
+Type: filesandordirs; Name: "{app}\nonce.key"
+Type: filesandordirs; Name: "{app}\refresh.key"
+Type: filesandordirs; Name: "{app}\salt.key"
+Type: filesandordirs; Name: "{app}\tag.key"
 Type: filesandordirs; Name: "{app}\vdb0.key"
+Type: filesandordirs; Name: "{app}\UserInterface.exe"
+Type: filesandordirs; Name: "{app}\last_connected_node.ini"
 Type: dirifempty; Name: "{app}"; 
 
 

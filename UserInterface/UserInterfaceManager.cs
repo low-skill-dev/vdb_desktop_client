@@ -1,8 +1,11 @@
 ﻿using ApiQuerier.Helpers;
-using ApiQuerier.Models.Auth;
-using ApiQuerier.Models.Nodes;
+using ApiQuerier.Models;
+using ApiQuerier.Models;
+using ApiModels.Auth;
+using ApiModels.Node;
 using UserInterface.Services;
 using WireguardManipulator;
+using FilesHelper;
 
 namespace UserInterface;
 internal class WebException : UserException
@@ -54,6 +57,8 @@ internal sealed class UserInterfaceManager
 	#endregion
 
 
+	public event Action? ConnectedToNode;
+
 	public UserInfo UserInfo { get; private set; }
 
 	public TunnelManager tunnelManager;
@@ -64,9 +69,9 @@ internal sealed class UserInterfaceManager
 		this.State = 0;
 		this.tunnelManager = new();
 
-		Trace.WriteLine("Trying to load user from local storage...");
+		Console.WriteLine("Trying to load user from local storage...");
 
-		ApiHelperTransient.AuthorizationFailed += () => { this.State = States.Authentication; };
+		ApiHelperTransient.AuthorizationFailed += (_) => { this.State = States.Authentication; };
 	}
 
 
@@ -95,6 +100,10 @@ internal sealed class UserInterfaceManager
 
 	private int retryCount = 0;
 	private readonly int maxRetryCount = 1;
+	private int _lastConnectedNode=-1;
+	public async Task<int> LastConnectedNode() => _lastConnectedNode < 0 
+		? await RuntimeInfoHelper.ReadLastConnectedNode() : _lastConnectedNode ;
+	public bool IsConnected = false;
 	public async Task<bool> ConnectToSelectedNode(int nodeId)
 	{
 		var prev = this.CurrentlyConnectedNode;
@@ -119,6 +128,10 @@ internal sealed class UserInterfaceManager
 		var result = await this.tunnelManager.EstablishTunnel();
 		if(result) {
 			this.CurrentlyConnectedNode = nodeId;
+			IsConnected = true;
+			_lastConnectedNode = nodeId;
+			this.ConnectedToNode?.Invoke();
+			_ = RuntimeInfoHelper.WriteLastConnectedNode(nodeId); // not awaited
 		}
 
 		return result;
@@ -159,7 +172,7 @@ internal sealed class UserInterfaceManager
 			throw new UserException("Password or email failed the validation.");
 		}
 
-		var response = await AuthHelper.Authenticate(new() { Email = email, Password = password });
+		var response = await AuthHelper.Authenticate(email, password);
 		var status = AuthHelper.LastStatusCode;
 
 		if((status >= 300 && status <= 399) || (status >= 500 && status <= 599)) {
@@ -183,7 +196,7 @@ internal sealed class UserInterfaceManager
 
 		this.UserInfo = response.UserInfo;
 
-		Trace.WriteLine("Authenticated successfully.");
+		Console.WriteLine("Authenticated successfully.");
 		this.State = States.Registering;
 
 		return true;
@@ -247,7 +260,7 @@ internal sealed class UserInterfaceManager
 			_ = await this.UnregisterDevice();
 			_ = await this.TerminateSelf();
 			this.tunnelManager.DeleteAllFiles();
-			LocalHelper.DeleteRefreshToken();
+			TokenFilesHelper.DeleteRefreshToken();
 			this.State = States.Authentication;
 			return true;
 		} catch {

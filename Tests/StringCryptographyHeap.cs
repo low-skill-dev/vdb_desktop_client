@@ -1,3 +1,5 @@
+#if FALSE
+
 using CryptoHelper;
 using DeviceId;
 using System.Security.Cryptography;
@@ -54,3 +56,4 @@ public class StringCryptographyNoStackAllocHeap
 	//}
 
 }
+#endif

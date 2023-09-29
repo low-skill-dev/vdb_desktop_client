@@ -6,15 +6,20 @@ using System.Text;
 using System.Text.Unicode;
 using static System.Text.Encoding;
 using Convert = System.Convert;
+
 namespace CryptoHelper;
 
+/// <summary>
+/// Provides aes256gcm encryption for strings up to 64k chars long.
+/// </summary>
 public static class StringCryptography
 {
 	private const int keySizeInBytes = 256 / 8;
 	private const int tagSizeInBytes = 128 / 8;
-	private const int blockSizeBytes = 128 / 8;
 	private const int nonceSizeInBytes = 96 / 8;
+	private const int blockSizeInBytes = 128 / 8;
 	private const int HexToBytesLengthRatio = 2 / 1;
+	private const int maxAcceptedStringLength = 66 * 1024;
 
 	#region encrypt
 
@@ -28,8 +33,8 @@ public static class StringCryptography
 	/// <returns>In-stack encrypted string.</returns>
 	public static StringEncryptionResult EncryptString(ReadOnlySpan<byte> keyBytes, string plainText)
 	{
-		//if(plainText.Length > 70 * 1024) // allow up to 64 kbyte hex string
-		//	throw new OutOfMemoryException("Too big string was passed to the method.");
+		if(plainText.Length > maxAcceptedStringLength)
+			throw new OutOfMemoryException("Too long string was passed to the method.");
 
 		Span<byte> key = stackalloc byte[keySizeInBytes];
 		SHA256.HashData(keyBytes, key);
@@ -60,16 +65,16 @@ public static class StringCryptography
 
 	private static void Utf8HexToBytes(ReadOnlySpan<char> hex, Span<byte> buf)
 	{
-		for(int i = 0; i < hex.Length; i+=2)
-			buf[i/2] = Convert.ToByte((((0 << 4) 
-				| (hex[i] - (hex[i]<='9' ? '0' : ('A'-10))) << 4) 
-				| (hex[i+1] - (hex[i+1] <= '9' ? '0' : ('A' -10)))));
+		for(int i = 0; i < hex.Length; i += 2)
+			buf[i / 2] = Convert.ToByte((((0 << 4)
+				| (hex[i] - (hex[i] <= '9' ? '0' : ('A' - 10))) << 4)
+				| (hex[i + 1] - (hex[i + 1] <= '9' ? '0' : ('A' - 10)))));
 	}
 
 	public static string DecryptString(ReadOnlySpan<byte> keyBytes, string hexCipher, string hexNonce, string hexTag)
 	{
-		//if(hexCipher.Length > 70 * 1024) // allow up to 64 kbyte hex string
-		//	throw new OutOfMemoryException("Too big string was passed to the method.");
+		if(hexCipher.Length > maxAcceptedStringLength)
+			throw new OutOfMemoryException("Too long string was passed to the method.");
 
 		Span<byte> key = stackalloc byte[keySizeInBytes];
 		Span<byte> plain = stackalloc byte[hexCipher.Length / 2];

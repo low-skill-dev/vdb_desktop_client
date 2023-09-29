@@ -2,7 +2,7 @@
 
 // refactor 27-08-2023
 
-internal class AuthResult
+public class AuthResult
 {
 	public required JwtInfo JwtInfo { get; init; }
 	public required UserInfo UserInfo { get; init; }

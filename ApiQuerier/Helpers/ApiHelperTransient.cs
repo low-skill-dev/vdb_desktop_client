@@ -1,23 +1,19 @@
-﻿using ApiModels.Auth;
-using ApiModels.Device;
+﻿using ApiModels.Device;
 using ApiModels.Node;
 using ApiQuerier.Models;
+using ApiQuerier.Services;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Security.Authentication;
-using System.Text.Json;
 using static ApiQuerier.Helpers.Constants;
 using static ApiQuerier.Helpers.WebCommon;
 
 namespace ApiQuerier.Helpers;
 
-// refactor 27-08-2023
-
 /// <summary>
 /// This service is designed to be transient. <br/>
 /// However, it can be safely used for multiple rapid requests.<br/>
-/// Recommended lifetime is no more than 10 seconds.<br/>
+/// Recommended lifetime is no more than 5 seconds.<br/>
 /// After that span, access <b>token</b> can became invalid and this service<br/>
 /// <b>WILL NOT revalidate</b> it, what <b>causes unhandled exceptions</b>.
 /// </summary>
@@ -28,7 +24,32 @@ public sealed class ApiHelperTransient
 	private static DateTime _accessExpires;
 	private static string? _accessToken;
 
-	private static string? RefreshToken { get; set; }
+	private static DateTime _refreshExpires;
+	private static string? _refreshToken;
+
+	private static string? RefreshToken
+	{
+		get
+		{
+			return _refreshToken;
+		}
+		set
+		{
+			Trace.WriteLine($"Setting new refresh token.");
+
+			if(value is null)
+			{
+				Trace.WriteLine($"Token was null.");
+				return;
+			}
+
+			JwtService.ValidateJwtToken(value, out _refreshExpires, out _, out _);
+
+			_refreshToken = value;
+
+			Trace.WriteLine($"New refresh token was set.");
+		}
+	}
 	private static string? AccessToken
 	{
 		get
@@ -37,7 +58,15 @@ public sealed class ApiHelperTransient
 		}
 		set
 		{
-			Trace.WriteLine($"Setting new access token to the {nameof(httpClient)}.");
+			Trace.WriteLine($"Setting new access token to the {nameof(HttpClient)}.");
+
+			if(value is null)
+			{
+				Trace.WriteLine($"Token was null.");
+				return;
+			}
+
+			JwtService.ValidateJwtToken(value, out _accessExpires, out _, out _);
 
 			httpClient.DefaultRequestHeaders.Authorization
 				= new AuthenticationHeaderValue("Bearer", value);
@@ -51,7 +80,7 @@ public sealed class ApiHelperTransient
 	{
 		Trace.WriteLine($"{nameof(ApiHelperTransient)} static ctor started.");
 
-		_accessExpires = DateTime.MinValue;
+		_refreshExpires = _accessExpires = DateTime.MinValue;
 
 		Trace.WriteLine($"{nameof(ApiHelperTransient)} static ctor completed.");
 	}
@@ -75,7 +104,8 @@ public sealed class ApiHelperTransient
 
 	#endregion
 
-	public int _lastStatusCode;
+
+	private int _lastStatusCode;
 	public int LastStatusCode
 	{
 		get
@@ -108,22 +138,23 @@ public sealed class ApiHelperTransient
 	{
 		Trace.WriteLine($"{nameof(ApiHelperTransient)} ctor started.");
 
+		// If current access token is valid - then no refresh needed.
 		var isAccessValid =
 			!string.IsNullOrWhiteSpace(AccessToken) &&
 			_accessExpires.AddSeconds(-5) < DateTime.UtcNow;
 
 		if(!isAccessValid)
 		{
-			/* Commonly, external users does not pass any 'givenResult' here, 
+			/* Commonly, external methods does not pass any 'givenResult' here, 
 			 * so every time our local access token is expired, we just go and refresh it.
 			 * 
 			 * But how the refresh works? Well, it calls the same method
 			 * (I mean... this method) and passing there the AuthResult that
-			 * was received from the server. 
+			 * was received from the server.
 			 * 
 			 * So this method is actually double functioned: 
 			 * when the external project is trying to create some transient 
-			 * instance of this class, that is really needed to perform requests: 
+			 * instance of this class that is really needed to perform requests: 
 			 * it just passes null here, but when the Auth helper calling this method, 
 			 * it literally tells it to write AuthResult to our static fields.
 			 */
@@ -148,10 +179,8 @@ public sealed class ApiHelperTransient
 			}
 
 			UserInfo = loaded.UserInfo;
-
 			RefreshToken = loaded.RefreshToken;
 			AccessToken = loaded.AccessToken;
-			_accessExpires = loaded.JwtInfo.Exp;
 		}
 
 		Trace.WriteLine($"{nameof(ApiHelperTransient)} ctor completed.");

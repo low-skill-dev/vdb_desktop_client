@@ -13,10 +13,10 @@ using static ApiQuerier.Helpers.WebCommon;
 
 namespace ApiQuerier.Helpers;
 
-// refactor 27-08-2023
-
 public static class AuthHelper
 {
+	public static event Action? AuthSucceeded;
+
 	private static int _lastStatusCode;
 	public static int LastStatusCode
 	{
@@ -26,7 +26,7 @@ public static class AuthHelper
 		}
 		private set
 		{
-			if(value < 200 || value > 299)		
+			if(value < 200 || value > 299)
 				Trace.WriteLine($"Request failed: HTTP_{value}.");
 			else
 				Trace.WriteLine($"Request succeeded: HTTP_{value}.");
@@ -103,6 +103,7 @@ public static class AuthHelper
 
 			var jwtResponse = (await response.Content.ReadFromJsonAsync<JwtResponse>(jsonOptions))!;
 
+			AuthSucceeded?.Invoke();
 			return DecodeJwtResponse(jwtResponse);
 		}
 		catch(Exception e)
@@ -114,9 +115,9 @@ public static class AuthHelper
 
 	#endregion
 
-	public static async Task Authenticate(string login, string password)
+	public static async Task<AuthResult?> Authenticate(string login, string password)
 	{
-		await Authenticate(new LoginRequest { Email = login, Password = password });
+		return await Authenticate(new LoginRequest { Email = login, Password = password });
 	}
 
 	// This method is used by external projects, e.g. UI to send credentials to the server
@@ -126,8 +127,8 @@ public static class AuthHelper
 
 		try
 		{
-			var response = await httpClient.PostAsync(
-				HostPathTls + ApiBasePath + AuthPath + QueryStartString 
+			var response = await httpClient.PutAsync(
+				HostPathTls + ApiBasePath + AuthPath + QueryStartString
 				+ RefreshJwtInBodyQuery + QueryAndString + RedirectToLoginQuery,
 				JsonContent.Create(request, options: jsonOptions));
 
@@ -143,6 +144,7 @@ public static class AuthHelper
 
 			var result = DecodeJwtResponse(jwtResponse);
 			await ApiHelperTransient.Create(result); // go to implementation for details of this call
+			AuthSucceeded?.Invoke();
 			return result;
 		}
 		catch(Exception e)
@@ -152,7 +154,7 @@ public static class AuthHelper
 		}
 	}
 
-	internal static async Task<AuthResult?> RefreshUsingLocalToken()
+	public static async Task<AuthResult?> RefreshUsingLocalToken()
 	{
 		Trace.WriteLine($"{nameof(RefreshUsingLocalToken)} started.");
 

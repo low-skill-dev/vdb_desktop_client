@@ -1,14 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 		<DebugType>embedded</DebugType>
+		<WarningLevel>7</WarningLevel>
+		<AnalysisLevel>preview</AnalysisLevel>
   </PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.32.2" />
+		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.0.0-preview4" />
 	</ItemGroup>
 
 	<ItemGroup>

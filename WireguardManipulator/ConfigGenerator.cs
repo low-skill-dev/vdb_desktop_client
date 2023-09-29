@@ -1,10 +1,10 @@
-﻿using System.Text;
+﻿using ApiModels.Device;
+using System.Text;
 
 namespace WireguardManipulator;
 
 internal static class ConfigGenerator
 {
-
 	public static string GenerateConfig(string privKey, ConnectDeviceResponse mainServerResponse)
 	{
 		return GenerateConfig(
@@ -16,7 +16,6 @@ internal static class ConfigGenerator
 		);
 	}
 
-	#region private
 	private static string GenerateConfig(
 		string PrivateKey,
 		string RemoteAddress,
@@ -27,18 +26,16 @@ internal static class ConfigGenerator
 		string AllowedIPs = @"0.0.0.0/0"
 	)
 	{
-		var sb = new StringBuilder(256);
-		_ = sb.AppendLine($"[Interface]");
-		_ = sb.AppendLine($"PrivateKey = {PrivateKey}");
-		_ = sb.AppendLine($"Address = {Address}");
-		_ = sb.AppendLine($"DNS = {DNS}");
-		_ = sb.AppendLine();
-		_ = sb.AppendLine($"[Peer]");
-		_ = sb.AppendLine($"PublicKey = {RemoteKey}");
-		_ = sb.AppendLine($"AllowedIPs = {AllowedIPs}");
-		_ = sb.AppendLine($"Endpoint = {RemoteAddress}:{RemotePort}");
-
-		return sb.ToString();
+		return new StringBuilder(256)
+			.AppendLine($"[Interface]")
+			.AppendLine($"PrivateKey = {PrivateKey}")
+			.AppendLine($"Address = {Address}")
+			.AppendLine($"DNS = {DNS}")
+			.AppendLine()
+			.AppendLine($"[Peer]")
+			.AppendLine($"PublicKey = {RemoteKey}")
+			.AppendLine($"AllowedIPs = {AllowedIPs}")
+			.AppendLine($"Endpoint = {RemoteAddress}:{RemotePort}")
+			.ToString();
 	}
-	#endregion
 }

@@ -1,9 +1,12 @@
-﻿using System.Diagnostics;
-//using System.Management.Automation;
+﻿
+using System.Diagnostics;
 
 namespace WireguardManipulator;
+
 internal static class CommandRunner
 {
+	/// <returns>stdout cmd response.</returns>
+	/// <exception cref="AggregateException"></exception>
 	public static async Task<string> RunAsync(string command)
 	{
 		try
@@ -33,6 +36,7 @@ internal static class CommandRunner
 		}
 	}
 
+	/// <inheritdoc cref="RunAsync" />
 	public static string Run(string command)
 	{
 		try

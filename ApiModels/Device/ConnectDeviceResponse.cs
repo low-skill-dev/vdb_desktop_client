@@ -2,14 +2,10 @@
 
 #pragma warning disable CS8618
 
-public abstract class AddPeerResponse
+public class ConnectDeviceResponse
 {
-	public string AllowedIps { get; init; }
-	public string InterfacePublicKey { get; init; }
-}
-
-public abstract class ConnectDeviceResponse : AddPeerResponse
-{
+	public string AllowedIps { get; set; }
+	public string InterfacePublicKey { get; set; }
 	public string AddedPeerPublicKey { get; init; }
 	public string ServerIpAddress { get; init; }
 	public int WireguardPort { get; init; }

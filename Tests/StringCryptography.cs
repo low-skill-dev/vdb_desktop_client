@@ -86,9 +86,9 @@ public class StringCryptography
 
 		var encrypted = CryptoHelper.StringCryptography.EncryptString(key, testToken);
 
-		var dectypted = CryptoHelper.StringCryptography.DecryptString(key, encrypted);
+		var decrypted = CryptoHelper.StringCryptography.DecryptString(key, encrypted);
 
-		Assert.Equal(testToken, dectypted);
+		Assert.Equal(testToken, decrypted);
 	}
 
 }

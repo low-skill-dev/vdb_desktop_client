@@ -1,0 +1,74 @@
+					SHA512_OneMillion
+
+|                    Method |     Mean |    Error |   StdDev |       Gen0 |      Gen1 |      Gen2 | Allocated |
+|-------------------------- |---------:|---------:|---------:|-----------:|----------:|----------:|----------:|
+|         Sha512Hash512Bits | 801.2 ms | 15.52 ms | 17.87 ms | 15000.0000 | 8000.0000 | 1000.0000 |  83.93 MB |
+| Sha512Hash512BitsParallel | 268.0 ms |  4.97 ms |  5.92 ms | 15000.0000 | 8000.0000 | 1000.0000 |  83.98 MB |
+
+
+
+My little research about SHA512 relevance on refresh token key.
+
+The scenario is attacker gains readonly access to the filesystem (and database consequently), 
+but not the backend code. Perimeterless security principle tells are we are never surrender.
+
+Say, refresh token identifies itself by random 512 bits key, database stores SHA512 hash. 
+Will attacker be able to re-generate existing refresh JWT ? If token identifier is stored 
+as plain - with easy. But if we store hash...
+
+HW: R5 4600 @3GHz, 32gb DDR4 @3.6GHz.
+BenchmarkDotNet v0.13.7
+Runtime=.NET 8.0.0 (8.0.23.37506), X64 RyuJIT AVX2
+GC=Concurrent Workstation
+HardwareIntrinsics=AVX2,AES,BMI1,BMI2,FMA,LZCNT,PCLMUL,POPCNT
+VectorSize=256
+
+[GlobalSetup]
+  _toHash = new object[1000 * 1000]
+    .Select(x => RandomNumberGenerator.GetBytes(512 / 8))
+    .ToArray();
+
+[Benchmark]
+  Parallel.For(0, _toHash.Length, new()
+    { MaxDegreeOfParallelism = Environment.ProcessorCount }
+    i => _toHash[i] = SHA512.HashData(_toHash[i]));
+
+Sha512Hash512BitsParallel | 269.0 ms | 83.97 MB |
+
+Now we take the calc... 2^512 /1000 /1000 *269 /1000 /60 /60 /24 /365.
+
+2^512 - total SHA512 output variants.
+/1000 /1000 - we tested 1 million in a bench
+*269 /1000 - and it took 0.269 seconds.
+/60 /60 /24 /365 - you understand.
+
+Result: > 10^140 years to guaranteedly find the key. 
+So, yes, hash your keys, use 512 bits identifiers
+
+
+
+[MemoryDiagnoser]
+public class Sha512OneHundredMillionTimes
+{
+	private byte[][] _toHash;
+
+	[GlobalSetup]
+	public void Setup()
+	{
+		_toHash = new object[1000 * 1000].Select(x => RandomNumberGenerator.GetBytes(512 / 8)).ToArray();
+	}
+
+	[Benchmark]
+	public void Sha512Hash512Bits()
+	{
+		for(int i = 0; i < _toHash.Length; i++) _toHash[i] = SHA512.HashData(_toHash[i]);
+	}
+
+	[Benchmark]
+	public void Sha512Hash512BitsParallel()
+	{
+		ParallelOptions opts = new() { MaxDegreeOfParallelism = Environment.ProcessorCount };
+
+		Parallel.For(0, _toHash.Length, opts, i => _toHash[i] = SHA512.HashData(_toHash[i]));
+	}
+}

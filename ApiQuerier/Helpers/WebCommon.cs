@@ -6,12 +6,11 @@ using static ApiQuerier.Helpers.Constants;
 
 namespace ApiQuerier.Helpers;
 
-// refactor 27-08-2023
-
 internal static class WebCommon
 {
+	private static readonly HttpClientHandler httpHandler;
+
 	public static readonly JsonSerializerOptions jsonOptions;
-	public static readonly HttpClientHandler httpHandler;
 	public static readonly HttpClient httpClient;
 
 	static WebCommon()
@@ -22,8 +21,7 @@ internal static class WebCommon
 		httpHandler = new()
 		{
 			SslProtocols = Environment.OSVersion.Version.Major > 10
-				? SslProtocols.Tls13
-				: SslProtocols.Tls12,
+				? SslProtocols.Tls13 : SslProtocols.Tls12 
 		};
 
 		httpClient = new(httpHandler);

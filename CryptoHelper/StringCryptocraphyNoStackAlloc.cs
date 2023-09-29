@@ -1,4 +1,6 @@
-﻿using System;
+﻿#if FALSE
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -89,3 +91,6 @@ public static class StringCryptocraphyNoStackAlloc
 
 	#endregion
 }
+
+
+#endif
