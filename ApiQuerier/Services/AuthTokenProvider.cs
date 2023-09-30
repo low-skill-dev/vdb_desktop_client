@@ -12,18 +12,22 @@ using System.Security.Claims;
 namespace ApiQuerier.Services;
 
 /// <summary>
-/// A gateway class for all authentication operations.
+/// A singleton gateway class for all authentication operations.
 /// The role is to provide access token with auto refresh
 /// to other classes.
 /// </summary>
-public static class AuthTokenProvider
+public class AuthTokenProvider
 {
+	private static AuthTokenProvider _instance;
+
+	#region logging
+
 	private static void Log(string message)
 		=> Trace.WriteLine($"{nameof(AuthTokenProvider)}: {message}.");
 
 	private static void LogRequest(string path, int code)
 	{
-		LastStatusCode = code;
+		_instance.LastStatusCode = code;
 
 		string msg = string.Empty;
 
@@ -38,36 +42,35 @@ public static class AuthTokenProvider
 		Log(msg);
 	}
 
+	#endregion
+
 	#region private fields
 
-	private static string? _accessToken;
-	private static string? _refreshToken;
+	private string? _accessToken;
+	private string? _refreshToken;
 
-	private static TimeSpan? _accessTokenLifespan;
-	private static TimeSpan? _refreshTokenLifespan;
+	private TimeSpan? _accessTokenLifespan;
+	private TimeSpan? _refreshTokenLifespan;
 
-	private static DateTime? _accessValidTo;
-	private static DateTime? _refreshValidTo;
+	private DateTime? _accessValidTo;
+	private DateTime? _refreshValidTo;
 
-	private static double _minimalAccessTokenLifespanPercent;
-	private static double _minimalRefreshTokenLifespanPercent;
+	private double _minimalAccessTokenLifespanPercent;
+	private double _minimalRefreshTokenLifespanPercent;
 
-	private static TimeSpan? _minimalAccessTokenLifespan;
-	private static TimeSpan? _minimalRefreshTokenLifespan;
+	private TimeSpan? _minimalAccessTokenLifespan;
+	private TimeSpan? _minimalRefreshTokenLifespan;
 
-	private static readonly HttpClient _httpClient;
-	private static readonly HttpClientHandler _httpHandler;
-	private static readonly JsonSerializerOptions _jsonOpts;
-
-	private static int _maxRetries;
-	private static TimeSpan _retryDelay;
+	private readonly HttpClient _httpClient;
+	private readonly HttpClientHandler _httpHandler;
+	private readonly JsonSerializerOptions _jsonOpts;
 
 	#endregion
 
 	#region props for private fields
 
 	/// <summary> Value must be in range (0; 1]. </summary>
-	public static double MinimalAccessTokenLifespanPercent
+	public double MinimalAccessTokenLifespanPercent
 	{
 		get
 		{
@@ -85,7 +88,7 @@ public static class AuthTokenProvider
 	}
 
 	/// <summary> Value must be in range (0; 1]. </summary>
-	public static double MinimalRefreshTokenLifespanPercent
+	public double MinimalRefreshTokenLifespanPercent
 	{
 		get
 		{
@@ -102,7 +105,7 @@ public static class AuthTokenProvider
 		}
 	}
 
-	public static TimeSpan? MinimalAccessTokenLifespan
+	public TimeSpan? MinimalAccessTokenLifespan
 	{
 		get
 		{
@@ -116,7 +119,7 @@ public static class AuthTokenProvider
 		}
 	}
 
-	public static TimeSpan? MinimalRefreshTokenLifespan
+	public TimeSpan? MinimalRefreshTokenLifespan
 	{
 		get
 		{
@@ -130,7 +133,7 @@ public static class AuthTokenProvider
 		}
 	}
 
-	public static TimeSpan HttpClientTimeout
+	public TimeSpan HttpClientTimeout
 	{
 		get
 		{
@@ -151,14 +154,14 @@ public static class AuthTokenProvider
 
 	#region public props
 
-	public static int LastStatusCode { get; private set; }
-	public static UserInfo CurrentUser { get; private set; }
+	public int LastStatusCode { get; private set; }
+	public UserInfo CurrentUser { get; private set; }
 
 	#endregion
 
 	#region calculated props
 
-	private static TimeSpan _minimalAccessTokenLifespanResolved
+	private TimeSpan _minimalAccessTokenLifespanResolved
 	{
 		get
 		{
@@ -172,7 +175,7 @@ public static class AuthTokenProvider
 		}
 	}
 
-	private static TimeSpan _minimalRefreshTokenLifespanResolved
+	private TimeSpan _minimalRefreshTokenLifespanResolved
 	{
 		get
 		{
@@ -186,7 +189,7 @@ public static class AuthTokenProvider
 		}
 	}
 
-	public static bool IsAuthenticated =>
+	public bool IsAuthenticated => _accessToken is not null &&
 		_refreshToken is not null && _refreshValidTo.HasValue &&
 		(_refreshValidTo - DateTime.UtcNow) > _minimalRefreshTokenLifespanResolved;
 
@@ -204,21 +207,21 @@ public static class AuthTokenProvider
 	//public static event StatusCodeHandler? RefreshFailed;
 	//public static event StatusCodeHandler? AuthenticationFailed;
 
-	public static event Action<string>? AccessTokenChanged;
+	public event Action<string>? AccessTokenChanged;
 
 	#endregion
 
 	#region private
 
-	static AuthTokenProvider()
+	/// <summary>
+	/// Initializes HttpClient
+	/// </summary>
+	private AuthTokenProvider()
 	{
-		Log("static ctor started");
+		Log("ctor started");
 
 		_minimalAccessTokenLifespanPercent = 0.1;
 		_minimalRefreshTokenLifespanPercent = 0.1;
-
-		_maxRetries = 3;
-		_retryDelay = TimeSpan.FromSeconds(1);
 
 		_httpHandler = new()
 		{
@@ -231,12 +234,28 @@ public static class AuthTokenProvider
 
 		_jsonOpts = new(JsonSerializerDefaults.Web);
 
-		WriteTokensInfo(null, TokenFilesHelper.ReadRefreshToken());
-
-		Log("static ctor completed");
+		Log("ctor completed");
 	}
 
-	private static void WriteTokensInfo(string? access, string? refresh)
+	public static async Task<AuthTokenProvider?> Create()
+	{
+		Log($"nameof({Create}) started");
+
+		if(_instance is null)
+		{
+			_instance = new AuthTokenProvider();
+
+			_instance._refreshToken = TokenFilesHelper.ReadRefreshToken();
+			if(_instance._refreshToken is not null) await _instance.RefreshAsync();
+		}
+
+		await _instance.RefreshIfNeededAsync();
+
+		Log($"nameof({Create}) completed");
+		return _instance;
+	}
+
+	private void WriteTokensInfo(string? access, string? refresh)
 	{
 		if(!string.IsNullOrWhiteSpace(access))
 		{
@@ -314,13 +333,10 @@ public static class AuthTokenProvider
 
 	#region auth methods
 
-	public static async Task<AuthResult?> AuthenticateAsync(string login, string password)
+	public async Task<AuthResult?> AuthenticateAsync(string login, string password)
 		=> await AuthenticateAsync(new() { Email = login, Password = password });
-	public static async Task<AuthResult?> AuthenticateAsync(LoginRequest request, int retryCount = 0)
+	public async Task<AuthResult?> AuthenticateAsync(LoginRequest request)
 	{
-		if(retryCount > _maxRetries) return null;
-		if(retryCount > 0) await Task.Delay(_retryDelay);
-
 		Log($"{nameof(AuthenticateAsync)} started");
 
 		var path = HostPathTls + ApiBasePath + AuthPath + QueryStartString
@@ -334,7 +350,7 @@ public static class AuthTokenProvider
 			LogRequest(path, (int)response.StatusCode);
 
 			if(!response.IsSuccessStatusCode)
-				return await AuthenticateAsync(request, retryCount + 1);
+				return null;
 
 			var jwtResponse = (await response.Content.ReadFromJsonAsync<JwtResponse>(_jsonOpts))!;
 
@@ -349,15 +365,12 @@ public static class AuthTokenProvider
 		catch(Exception e)
 		{
 			Log($"{nameof(AuthenticateAsync)} failed: {e.Message}");
-			return await AuthenticateAsync(request, retryCount + 1);
+			return null;
 		}
 	}
 
-	private static async Task RefreshAsync(int retryCount = 0)
+	private async Task<bool> RefreshAsync()
 	{
-		if(retryCount > _maxRetries) return;
-		if(retryCount > 0) await Task.Delay(_retryDelay);
-
 		Log($"{nameof(RefreshAsync)} started");
 
 		if(_refreshToken is null) throw new
@@ -373,11 +386,7 @@ public static class AuthTokenProvider
 
 			LogRequest(path, (int)response.StatusCode);
 
-			if(!response.IsSuccessStatusCode)
-			{
-				await RefreshAsync(retryCount + 1);
-				return;
-			}
+			if(!response.IsSuccessStatusCode) return false;
 
 			var jwtResponse = (await response.Content.ReadFromJsonAsync<JwtResponse>(_jsonOpts))!;
 
@@ -387,23 +396,32 @@ public static class AuthTokenProvider
 			CurrentUser = result.UserInfo;
 
 			Log($"{nameof(RefreshAsync)} completed");
+			return true;
 		}
 		catch(Exception e)
 		{
-			Trace.WriteLine($"{nameof(RefreshAsync)} failed: {e.Message}.");
-			await RefreshAsync(retryCount + 1);
-			return;
+			Log($"{nameof(RefreshAsync)} failed: {e.Message}.");
+			return false;
 		}
 	}
 
-	public static async Task LogoutAsync()
+	private async Task<bool> RefreshIfNeededAsync()
+	{
+		if(_accessToken is null || !_accessTokenLifespan.HasValue || !_accessValidTo.HasValue ||
+			(_accessValidTo - DateTime.UtcNow) < _minimalAccessTokenLifespanResolved) 
+			if (_refreshToken is not null) return await RefreshAsync();
+
+		return true;
+	}
+
+		public static async Task LogoutAsync()
 	{
 
 	}
 
 	#endregion
 
-	public static async Task<string?> GetAccessToken()
+	public async Task<string?> GetAccessToken()
 	{
 		if(_accessToken is not null && _accessTokenLifespan is not null &&
 			(_accessValidTo - DateTime.UtcNow) > _minimalAccessTokenLifespanResolved)

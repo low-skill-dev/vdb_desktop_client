@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using ApiQuerier.Services;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -88,6 +89,12 @@ public partial class MainWindow : Window
 				}
 			}
 		!;
+		this.ni.ContextMenuStrip.Items.Add("Exit").Click +=
+			delegate (object sender, EventArgs args) {
+				this.Close();
+				System.Windows.Forms.Application.Exit();
+			}
+		!;
 		this.ni.MouseDoubleClick += this.OnIconSwitchClick;
 		Console.WriteLine("Created icons.");
 		#endregion
@@ -117,8 +124,19 @@ public partial class MainWindow : Window
 
 	protected override async void OnInitialized(EventArgs e)
 	{
+		(await AuthTokenProvider.Create()).AccessTokenChanged += (t) =>
+		{
+			if(this.UIManager.State == UserInterfaceManager.States.Authentication)
+				this.UIManager.Register().Wait();
+		};
+		(await AuthTokenProvider.Create()).AccessTokenChanged += async (t) =>
+		{
+			this.UIManager.UserInfo = (await AuthTokenProvider.Create()).CurrentUser;
+		};
+
 		base.OnInitialized(e);
 		Console.WriteLine("OnInitialized called.");
+
 		this.UIManager.StateChanged += (state) => this.Dispatcher.Invoke(this.SetVisiblePanel);
 		this.UIManager.StateChanged += (state) => {
 			if(state != UserInterfaceManager.States.Authentication) {
@@ -156,6 +174,8 @@ public partial class MainWindow : Window
 
 	private async void OnIconSwitchClick(object? sender, EventArgs args)
 	{
+		if(!(await AuthTokenProvider.Create()).IsAuthenticated) return;
+		if(!this.WrapperGrid.IsEnabled) return;
 		try
 		{
 			this.WrapperGrid.IsEnabled = false;
@@ -324,8 +344,14 @@ public partial class MainWindow : Window
 	protected override void OnStateChanged(EventArgs e)
 	{
 		if(this.WindowState == System.Windows.WindowState.Minimized)
+		{
+			this.ni.ContextMenuStrip.Items[0].Text = "Show";
 			this.Hide();
-
+		}
+		else
+		{
+			this.ni.ContextMenuStrip.Items[0].Text = "Hide";
+		}
 		base.OnStateChanged(e);
 	}
 }

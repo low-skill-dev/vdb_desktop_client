@@ -64,9 +64,9 @@ public partial class AuthWindow : Window
 			DataValidator.ValidateEmail(email);
 			DataValidator.ValidatePassword(password);
 
-			var authResult = await AuthTokenProvider.AuthenticateAsync(email, password);
+			var authResult = await (await AuthTokenProvider.Create()).AuthenticateAsync(email, password);
 
-			AuthResponseToThrow(AuthTokenProvider.LastStatusCode, authResult);
+			AuthResponseToThrow((await AuthTokenProvider.Create()).LastStatusCode, authResult);
 
 
 			var aht = await ApiHelperTransient.Create();

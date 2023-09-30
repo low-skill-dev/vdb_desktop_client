@@ -68,7 +68,7 @@ internal sealed class UserInterfaceManager
 
 	public event Action? ConnectedToNode;
 
-	public UserInfo UserInfo { get; private set; }
+	public UserInfo UserInfo { get; set; }
 
 	public TunnelManager tunnelManager;
 	public PublicNodeInfo[] Nodes { get; private set; }
@@ -176,9 +176,15 @@ internal sealed class UserInterfaceManager
 	{
 		return (await this.Login(email, password)) && (await this.RegisterDevice());
 	}
+	public async Task<bool> Register()
+	{
+		return await this.RegisterDevice();
+	}
 
 	public async Task<bool> LoadNodes()
 	{
+		this.UserInfo = (await AuthTokenProvider.Create()).CurrentUser;
+
 		var client = await ApiHelperTransient.Create();
 		if(client is null) return false;
 
@@ -201,8 +207,8 @@ internal sealed class UserInterfaceManager
 			throw new UserException("Password or email failed the validation.");
 		}
 
-		var response = await AuthTokenProvider.AuthenticateAsync(email, password);
-		var status = AuthTokenProvider.LastStatusCode;
+		var response = await (await AuthTokenProvider.Create()).AuthenticateAsync(email, password);
+		var status = (await AuthTokenProvider.Create()).LastStatusCode;
 
 		if((status >= 300 && status <= 399) || (status >= 500 && status <= 599))
 		{
@@ -246,6 +252,8 @@ internal sealed class UserInterfaceManager
 	private static int safeCounter = 0;
 	private async Task<bool> RegisterDevice()
 	{
+		if(State == States.Tunneling) return true;
+
 		var client = await ApiHelperTransient.Create();
 		if(client is null) return false;
 		_ = await client.RegisterDevice(new() { WireguardPublicKey = this.tunnelManager.PublicKey });

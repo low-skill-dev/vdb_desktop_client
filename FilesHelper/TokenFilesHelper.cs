@@ -47,12 +47,12 @@ public static class TokenFilesHelper
 
 	public static string? ReadRefreshToken()
 	{
-		if(!File.Exists(OldRefreshTokenPath)) return null;
 		if(!File.Exists(RefreshTokenPath)) return null;
 		if(!File.Exists(RandomSaltPath)) return null;
 		if(!File.Exists(AesNoncePath)) return null;
 		if(!File.Exists(AesTagPath)) return null;
 
+		if(File.Exists(OldRefreshTokenPath))
 		{ // This block is for old program versions migration (1.1.0 and lower)
 			var oldToken = File.Exists(OldRefreshTokenPath)
 				? File.ReadAllText(OldRefreshTokenPath)
@@ -78,7 +78,7 @@ public static class TokenFilesHelper
 		if(string.IsNullOrEmpty(tag)) return null;
 
 		var key = GetEncryptionKey();
-		var token = StringCryptography.DecryptString(key, cipher, nonce,tag);
+		var token = StringCryptography.DecryptString(key, cipher, nonce, tag);
 
 		return token;
 	}

@@ -138,12 +138,12 @@ public sealed class ApiHelperTransient
 	{
 		Trace.WriteLine($"{nameof(ApiHelperTransient)} ctor started.");
 
-		if(AuthTokenProvider.IsAuthenticated) AccessToken =
-				await AuthTokenProvider.GetAccessToken();
+		if((await AuthTokenProvider.Create()).IsAuthenticated) AccessToken =
+				await (await AuthTokenProvider.Create()).GetAccessToken();
 		else
 			return null;
 
-		AuthTokenProvider.AccessTokenChanged += 
+		(await AuthTokenProvider.Create()).AccessTokenChanged += 
 			(tkn) => AccessToken = tkn;
 
 		Trace.WriteLine($"{nameof(ApiHelperTransient)} ctor completed.");
