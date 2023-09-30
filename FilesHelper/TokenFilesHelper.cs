@@ -47,6 +47,12 @@ public static class TokenFilesHelper
 
 	public static string? ReadRefreshToken()
 	{
+		if(!File.Exists(OldRefreshTokenPath)) return null;
+		if(!File.Exists(RefreshTokenPath)) return null;
+		if(!File.Exists(RandomSaltPath)) return null;
+		if(!File.Exists(AesNoncePath)) return null;
+		if(!File.Exists(AesTagPath)) return null;
+
 		{ // This block is for old program versions migration (1.1.0 and lower)
 			var oldToken = File.Exists(OldRefreshTokenPath)
 				? File.ReadAllText(OldRefreshTokenPath)
@@ -60,11 +66,6 @@ public static class TokenFilesHelper
 				File.Delete(oldToken);
 			}
 		}
-
-		if(!File.Exists(RefreshTokenPath)) return null;
-		if(!File.Exists(RandomSaltPath)) return null;
-		if(!File.Exists(AesNoncePath)) return null;
-		if(!File.Exists(AesTagPath)) return null;
 
 		var cipher = File.ReadAllText(RefreshTokenPath);
 		var salt = File.ReadAllText(RandomSaltPath);

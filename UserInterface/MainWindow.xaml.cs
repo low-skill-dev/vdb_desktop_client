@@ -22,6 +22,9 @@ public partial class MainWindow : Window
 	[DllImport("User32.dll")] private static extern bool SetForegroundWindow(IntPtr hWnd);
 	public MainWindow()
 	{
+		Trace.Listeners.Add(new ConsoleTraceListener());
+		Trace.WriteLine("Trace is listened by console.");
+
 		#region single instance ensure
 		string procName = Process.GetCurrentProcess().ProcessName;
 		Process[] processes = Process.GetProcessesByName(procName);
@@ -62,18 +65,26 @@ public partial class MainWindow : Window
 		this.ni.Icon = InactiveIcon;
 		this.ni.Text = "Disconnected.";
 		this.ni.Visible = true;
-		this.ni.MouseClick +=
-			delegate (object sender, System.Windows.Forms.MouseEventArgs args) {
-				if(args.Clicks != 1) return;
-				if(this.WindowState == WindowState.Minimized)
+		this.ni.ContextMenuStrip = new()
+		{
+			AutoSize = true
+		};
+		this.ni.ContextMenuStrip.Items.Add("Hide").Click +=
+			delegate (object sender, EventArgs args) {
+				var sdr = (ToolStripItem)sender;
+
+				//if(args.Clicks != 0) return;
+				if(sdr.Text == "Show")
 				{
+					sdr.Text = "Hide";
 					this.Show();
 					this.WindowState = WindowState.Normal;
 				}
 				else
 				{
-					this.Hide();
+					sdr.Text = "Show";
 					this.WindowState = WindowState.Minimized;
+					this.Hide();
 				}
 			}
 		!;
@@ -240,20 +251,32 @@ public partial class MainWindow : Window
 
 	private async void LoginBT_Click(object sender, RoutedEventArgs e)
 	{
-		this.onNewAction();
+		try
+		{
+			this.WrapperGrid.IsEnabled = false;
 
-		var email = this.EmailTB.Text;
-		var passwordTB = this.PasswordTB.Password;
+			this.onNewAction();
 
-		try {
-			_ = await this.UIManager.LoginAngRegister(email, passwordTB);
-		} catch(UserException ex) {
-			this.AuthErrorTB.Visibility = Visibility.Visible;
-			this.AuthErrorTB.Text = ex.Message;
-			return;
+			var email = this.EmailTB.Text;
+			var passwordTB = this.PasswordTB.Password;
+
+			try
+			{
+				_ = await this.UIManager.LoginAngRegister(email, passwordTB);
+			}
+			catch(UserException ex)
+			{
+				this.AuthErrorTB.Visibility = Visibility.Visible;
+				this.AuthErrorTB.Text = ex.Message;
+				return;
+			}
+
+			this.SetVisiblePanel();
 		}
-
-		this.SetVisiblePanel();
+		finally
+		{
+			this.WrapperGrid.IsEnabled = true;
+		}
 	}
 
 	private void asGuestBT_Click(object sender, RoutedEventArgs e)

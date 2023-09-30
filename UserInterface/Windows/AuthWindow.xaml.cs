@@ -1,6 +1,7 @@
 ﻿using ApiModels.Device;
 using ApiQuerier.Helpers;
 using ApiQuerier.Models;
+using ApiQuerier.Services;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -20,8 +21,6 @@ public partial class AuthWindow : Window
 	protected override void OnInitialized(EventArgs e)
 	{
 		Global.CurrentWindowNameof = nameof(AuthWindow);
-
-		Task.Run(AuthHelper.RefreshUsingLocalToken);
 
 		base.OnInitialized(e);
 	}
@@ -65,9 +64,9 @@ public partial class AuthWindow : Window
 			DataValidator.ValidateEmail(email);
 			DataValidator.ValidatePassword(password);
 
-			var authResult = await AuthHelper.Authenticate(email, password);
+			var authResult = await AuthTokenProvider.AuthenticateAsync(email, password);
 
-			AuthResponseToThrow(AuthHelper.LastStatusCode, authResult);
+			AuthResponseToThrow(AuthTokenProvider.LastStatusCode, authResult);
 
 
 			var aht = await ApiHelperTransient.Create();

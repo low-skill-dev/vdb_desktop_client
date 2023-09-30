@@ -6,6 +6,7 @@ using ApiModels.Node;
 using UserInterface.Services;
 using WireguardManipulator;
 using FilesHelper;
+using ApiQuerier.Services;
 
 namespace UserInterface;
 internal class WebException : UserException
@@ -29,23 +30,31 @@ internal sealed class UserInterfaceManager
 	private States _state;
 	private int? _currentlyConnectedNode;
 
-	public States State {
-		get {
+	public States State
+	{
+		get
+		{
 			return this._state;
 		}
-		set {
-			if(this._state != value) {
+		set
+		{
+			if(this._state != value)
+			{
 				this._state = value;
 				StateChanged?.Invoke(value);
 			}
 		}
 	}
-	public int? CurrentlyConnectedNode {
-		get {
+	public int? CurrentlyConnectedNode
+	{
+		get
+		{
 			return this._currentlyConnectedNode;
 		}
-		set {
-			if(this._currentlyConnectedNode != value) {
+		set
+		{
+			if(this._currentlyConnectedNode != value)
+			{
 				this._currentlyConnectedNode = value;
 				ActiveNodeChanged?.Invoke(value);
 			}
@@ -77,18 +86,24 @@ internal sealed class UserInterfaceManager
 
 	public async Task<bool> TryLoadUser()
 	{
-		try {
+		try
+		{
 			var result = await ApiHelperTransient.Create();
 			if(result is null) return false;
 
 			this.UserInfo = ApiHelperTransient.UserInfo;
-		} catch {
+		}
+		catch
+		{
 			return false;
 		}
 
-		try {
+		try
+		{
 			_ = await this.RegisterDevice();
-		} catch {
+		}
+		catch
+		{
 			return false;
 		}
 
@@ -100,9 +115,19 @@ internal sealed class UserInterfaceManager
 
 	private int retryCount = 0;
 	private readonly int maxRetryCount = 1;
-	private int _lastConnectedNode=-1;
-	public async Task<int> LastConnectedNode() => _lastConnectedNode < 0 
-		? await RuntimeInfoHelper.ReadLastConnectedNode() : _lastConnectedNode ;
+	private int _lastConnectedNode = -1;
+	public async Task<int> LastConnectedNode()
+	{
+		var testedValue = _lastConnectedNode;
+
+		if(Nodes.Any(x => x.Id == testedValue)) return testedValue;
+
+		testedValue = await RuntimeInfoHelper.ReadLastConnectedNode();
+
+		if(Nodes.Any(x => x.Id == testedValue)) return testedValue;
+
+		return Nodes.First().Id;
+	}
 	public bool IsConnected = false;
 	public async Task<bool> ConnectToSelectedNode(int nodeId)
 	{
@@ -115,8 +140,10 @@ internal sealed class UserInterfaceManager
 		if(client is null) return false;
 
 		var response = await client.ConnectToNode(new() { NodeId = nodeId, WireguardPublicKey = this.tunnelManager.PublicKey });
-		if(response is null) {
-			if(this.retryCount++ < this.maxRetryCount) {
+		if(response is null)
+		{
+			if(this.retryCount++ < this.maxRetryCount)
+			{
 				await Task.Delay(3000); // wait windows to establish regular connection
 				return await this.ConnectToSelectedNode(nodeId); // try once more
 			}
@@ -126,7 +153,8 @@ internal sealed class UserInterfaceManager
 
 		this.tunnelManager.WriteConfig(response);
 		var result = await this.tunnelManager.EstablishTunnel();
-		if(result) {
+		if(result)
+		{
 			this.CurrentlyConnectedNode = nodeId;
 			IsConnected = true;
 			_lastConnectedNode = nodeId;
@@ -168,33 +196,46 @@ internal sealed class UserInterfaceManager
 
 	private async Task<bool> Login(string email, string password)
 	{
-		if(!DataValidator.ValidateEmail(email) || !DataValidator.ValidatePassword(password)) {
+		if(!DataValidator.ValidateEmail(email) || !DataValidator.ValidatePassword(password))
+		{
 			throw new UserException("Password or email failed the validation.");
 		}
 
-		var response = await AuthHelper.Authenticate(email, password);
-		var status = AuthHelper.LastStatusCode;
+		var response = await AuthTokenProvider.AuthenticateAsync(email, password);
+		var status = AuthTokenProvider.LastStatusCode;
 
-		if((status >= 300 && status <= 399) || (status >= 500 && status <= 599)) {
+		if((status >= 300 && status <= 399) || (status >= 500 && status <= 599))
+		{
 			throw new WebException("Authentication server is not reachable");
-		} else
-		if(status == 401) {
+		}
+		else
+		if(status == 401)
+		{
 			throw new WebException("Wrong email or password.");
-		} else
-		if(status == 404) {
+		}
+		else
+		if(status == 404)
+		{
 			throw new WebException("User not found. Please visit the website and sign up.");
-		} else
-		if(status >= 400 && status <= 499) {
+		}
+		else
+		if(status >= 400 && status <= 499)
+		{
 			throw new WebException("Your request was reject by the server.");
-		} else
-		if((!(status >= 200 && status <= 299)) || response == null) {
+		}
+		else
+		if((!(status >= 200 && status <= 299)) || response == null)
+		{
 			throw new WebException("Unknown error occurred during the request.");
-		} else
-		if(response.RefreshToken is null || response.AccessToken is null) {
+		}
+		else
+		if(response.RefreshToken is null || response.AccessToken is null)
+		{
 			throw new WebException("Server did not send refresh token which was expected.");
 		}
 
 		this.UserInfo = response.UserInfo;
+		await ApiHelperTransient.Create(response);
 
 		Console.WriteLine("Authenticated successfully.");
 		this.State = States.Registering;
@@ -210,19 +251,26 @@ internal sealed class UserInterfaceManager
 		_ = await client.RegisterDevice(new() { WireguardPublicKey = this.tunnelManager.PublicKey });
 		var status = client.LastStatusCode;
 
-		if(status == 409) {
+		if(status == 409)
+		{
 			this.State = States.Authentication;
 			throw new WebException("Devices limit reached. Please visit you personal area on the website to delete one of the the devices.");
-		} else
-		if(status == 303) { // key duplicates
-			if(safeCounter++ < 3) { // there is an unbelievable low chance this to happen 5 times, like (N/2^256)^safeCounter.
+		}
+		else
+		if(status == 303)
+		{ // key duplicates
+			if(safeCounter++ < 3)
+			{ // there is an unbelievable low chance this to happen 5 times, like (N/2^256)^safeCounter.
 				this.tunnelManager = new();
 				return await this.RegisterDevice();
-			} else {
+			}
+			else
+			{
 				throw new WebException("The generated key was rejected by the server. Please restart the program to create a new one.");
 			}
 		}
-		if(!(status >= 200 && status <= 299) && status != 302) {
+		if(!(status >= 200 && status <= 299) && status != 302)
+		{
 			throw new WebException("Unknown error occurred during the request.");
 		}
 
@@ -255,7 +303,8 @@ internal sealed class UserInterfaceManager
 
 	public async Task<bool> LogOut()
 	{
-		try {
+		try
+		{
 			_ = await this.EnsureDisconnected();
 			_ = await this.UnregisterDevice();
 			_ = await this.TerminateSelf();
@@ -263,7 +312,9 @@ internal sealed class UserInterfaceManager
 			TokenFilesHelper.DeleteRefreshToken();
 			this.State = States.Authentication;
 			return true;
-		} catch {
+		}
+		catch
+		{
 			return false;
 		}
 	}

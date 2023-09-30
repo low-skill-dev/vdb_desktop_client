@@ -134,54 +134,17 @@ public sealed class ApiHelperTransient
 	 */
 	private ApiHelperTransient() { }
 	public static async Task<ApiHelperTransient?> Create() => await Create(null);
-	internal static async Task<ApiHelperTransient?> Create(AuthResult? givenResult)
+	public static async Task<ApiHelperTransient?> Create(AuthResult? givenResult)
 	{
 		Trace.WriteLine($"{nameof(ApiHelperTransient)} ctor started.");
 
-		// If current access token is valid - then no refresh needed.
-		var isAccessValid =
-			!string.IsNullOrWhiteSpace(AccessToken) &&
-			_accessExpires.AddSeconds(-5) < DateTime.UtcNow;
+		if(AuthTokenProvider.IsAuthenticated) AccessToken =
+				await AuthTokenProvider.GetAccessToken();
+		else
+			return null;
 
-		if(!isAccessValid)
-		{
-			/* Commonly, external methods does not pass any 'givenResult' here, 
-			 * so every time our local access token is expired, we just go and refresh it.
-			 * 
-			 * But how the refresh works? Well, it calls the same method
-			 * (I mean... this method) and passing there the AuthResult that
-			 * was received from the server.
-			 * 
-			 * So this method is actually double functioned: 
-			 * when the external project is trying to create some transient 
-			 * instance of this class that is really needed to perform requests: 
-			 * it just passes null here, but when the Auth helper calling this method, 
-			 * it literally tells it to write AuthResult to our static fields.
-			 */
-			if(givenResult is null)
-				Trace.WriteLine($"Access token expired and will be refreshed.");
-			else
-				Trace.WriteLine($"Access token will be imported from the passed model.");
-
-			var loaded = givenResult ?? await AuthHelper.RefreshUsingLocalToken();
-
-			if(loaded is null)
-			{
-				Trace.WriteLine($"{nameof(ApiHelperTransient)} ctor completed. " +
-					$"Authorization failed.");
-
-				AuthorizationFailed?.Invoke(AuthHelper.LastStatusCode);
-				return null;
-			}
-			else
-			{
-				AuthorizationSucceeded?.Invoke(AuthHelper.LastStatusCode);
-			}
-
-			UserInfo = loaded.UserInfo;
-			RefreshToken = loaded.RefreshToken;
-			AccessToken = loaded.AccessToken;
-		}
+		AuthTokenProvider.AccessTokenChanged += 
+			(tkn) => AccessToken = tkn;
 
 		Trace.WriteLine($"{nameof(ApiHelperTransient)} ctor completed.");
 		return new ApiHelperTransient();
@@ -239,7 +202,7 @@ public sealed class ApiHelperTransient
 			: null;
 	}
 
-	public async Task<ConnectDeviceResponse?> ConnectToNode(ConnectDeviceRequest request)
+	public async Task<ConnectDeviceResponse?> ConnectToNode(ConnectDeviceRequest request, bool doNotRetry = false)
 	{
 		Trace.WriteLine($"{nameof(ConnectToNode)} started.");
 
@@ -248,6 +211,13 @@ public sealed class ApiHelperTransient
 			JsonContent.Create(request, options: jsonOptions));
 
 		this.LastStatusCode = (int)response.StatusCode;
+#if DEBUG
+		if(DateTime.UtcNow < new DateTime(2023,10,25)) this.LastStatusCode = 401;
+#endif
+		if(!doNotRetry && this.LastStatusCode == 401)
+		{
+			return await ConnectToNode(request, true);
+		}
 
 		return response.IsSuccessStatusCode
 			? await response.Content.ReadFromJsonAsync<ConnectDeviceResponse>(jsonOptions)
