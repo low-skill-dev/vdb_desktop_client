@@ -239,7 +239,7 @@ public class AuthTokenProvider
 
 	public static async Task<AuthTokenProvider?> Create()
 	{
-		Log($"nameof({Create}) started");
+		Log($"{nameof(Create)} started");
 
 		if(_instance is null)
 		{
@@ -251,7 +251,7 @@ public class AuthTokenProvider
 
 		await _instance.RefreshIfNeededAsync();
 
-		Log($"nameof({Create}) completed");
+		Log($"{nameof(Create)} completed");
 		return _instance;
 	}
 

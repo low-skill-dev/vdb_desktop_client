@@ -1,6 +1,7 @@
 ﻿using ApiQuerier.Services;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,6 +13,9 @@ namespace UserInterface;
 // ! entry-point
 public partial class MainWindow : Window
 {
+	private static string WorkingDirectoryPath => Environment.CurrentDirectory;
+	private static string LogPath => Path.Join(WorkingDirectoryPath, @"vdb.log");
+
 	private readonly UserInterfaceManager UIManager;
 	private readonly System.Windows.Forms.NotifyIcon ni;
 
@@ -23,8 +27,33 @@ public partial class MainWindow : Window
 	[DllImport("User32.dll")] private static extern bool SetForegroundWindow(IntPtr hWnd);
 	public MainWindow()
 	{
+#if DEBUG
+		AllocConsole();
+#endif
+
 		Trace.Listeners.Add(new ConsoleTraceListener());
 		Trace.WriteLine("Trace is listened by console.");
+
+		// file logging
+
+		if(File.Exists(LogPath) && (new FileInfo(LogPath).Length/1024/1024)>10)
+		{
+			Trace.WriteLine("Log file will be trimmed.");
+			var lines = File.ReadAllLines(LogPath);
+			lines = lines.Skip(lines.Length / 4 * 3).ToArray();
+			File.WriteAllLines(LogPath, lines);
+		}
+
+		Stream logFile = File.Exists(LogPath) ? File.OpenWrite(LogPath) : File.Create(LogPath);
+
+		var fileListener = new TextWriterTraceListener(logFile);
+		fileListener.TraceOutputOptions = 
+			TraceOptions.LogicalOperationStack |
+			TraceOptions.DateTime;
+
+		Trace.Listeners.Add(fileListener);
+		Trace.AutoFlush = true;
+		//
 
 		#region single instance ensure
 		string procName = Process.GetCurrentProcess().ProcessName;
@@ -43,9 +72,6 @@ public partial class MainWindow : Window
 		}
 		#endregion
 
-#if DEBUG
-		AllocConsole();
-#endif
 		Console.WriteLine("Console is alloced.");
 
 		this.UIManager = new();

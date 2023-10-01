@@ -8,7 +8,7 @@ internal sealed class KeyPair
 	private KeyPair(string privKey, string pubKey)
 	{
 		this.Private = privKey.Trim("\r\n\t,; ".ToCharArray());
-		this.Public = pubKey.Trim("\r\n\t,; ".ToCharArray()); // TODO: WRONG KEY
+		this.Public = pubKey.Trim("\r\n\t,; ".ToCharArray()); 
 	}
 
 	public KeyPair(string privKey) : this(privKey, CommandRunner.Run($"echo {privKey.Trim()} | wg pubkey")) { }
