@@ -1,9 +1,9 @@
 #define MyAppName "Vdb VPN"
-#define MyAppVersion "1.2.0"
+#define MyAppVersion "1.2.1"
 #define MyAppPublisher "Vdb"
 #define MyAppURL "https://vdb.bruhcontent.ru/"
 #define MyAppExeName "UserInterface.exe"
-#define DotNetFileName "windowsdesktop-runtime-8.0.0-rc.1.23420.5-win-x64.exe";
+#define DotNetFileName "windowsdesktop-runtime-8.0.1-win-x64.exe";
 #define WgFileName "wireguard-amd64-0.5.3.msi";
 
 [Setup]
