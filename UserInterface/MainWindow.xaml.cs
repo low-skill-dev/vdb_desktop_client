@@ -1,7 +1,9 @@
 ﻿using ApiQuerier.Services;
+using Microsoft.Win32;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -36,7 +38,7 @@ public partial class MainWindow : Window
 
 		// file logging
 
-		if(File.Exists(LogPath) && (new FileInfo(LogPath).Length/1024/1024)>10)
+		if(File.Exists(LogPath) && (new FileInfo(LogPath).Length / 1024 / 1024) > 10)
 		{
 			Trace.WriteLine("Log file will be trimmed.");
 			var lines = File.ReadAllLines(LogPath);
@@ -47,7 +49,7 @@ public partial class MainWindow : Window
 		Stream logFile = File.Exists(LogPath) ? File.OpenWrite(LogPath) : File.Create(LogPath);
 
 		var fileListener = new TextWriterTraceListener(logFile);
-		fileListener.TraceOutputOptions = 
+		fileListener.TraceOutputOptions =
 			TraceOptions.LogicalOperationStack |
 			TraceOptions.DateTime;
 
@@ -58,13 +60,18 @@ public partial class MainWindow : Window
 		#region single instance ensure
 		string procName = Process.GetCurrentProcess().ProcessName;
 		Process[] processes = Process.GetProcessesByName(procName);
-		if(processes.Length > 1) {
-			foreach(Process process in processes) {
-				try {
+		if(processes.Length > 1)
+		{
+			foreach(Process process in processes)
+			{
+				try
+				{
 					const int SW_SHOWNORMAL = 1;
 					ShowWindow(process.MainWindowHandle, SW_SHOWNORMAL);
 					SetForegroundWindow(process.MainWindowHandle);
-				} catch {
+				}
+				catch
+				{
 
 				}
 			}
@@ -75,7 +82,8 @@ public partial class MainWindow : Window
 		Console.WriteLine("Console is alloced.");
 
 		this.UIManager = new();
-		this.UIManager.StateChanged += (state) => {
+		this.UIManager.StateChanged += (state) =>
+		{
 			this.Dispatcher.Invoke(() =>
 				Console.WriteLine($"\nState changed to: {this.UIManager.State}.\n"));
 		};
@@ -83,11 +91,13 @@ public partial class MainWindow : Window
 		this.InitializeComponent();
 		Console.WriteLine("Inited components.");
 
+		SystemEvents.PowerModeChanged += (a,b) => OnPowerModeChanged();
+
 		#region minimized icon creator
 		this.InactiveIcon = System.Drawing.Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath)!;
 		var t = this.InactiveIcon.ToBitmap();
 		ChangeBlueToRedOnBitmap(t);
-		this.ActiveIcon =  System.Drawing.Icon.FromHandle(t.GetHicon());
+		this.ActiveIcon = System.Drawing.Icon.FromHandle(t.GetHicon());
 		this.ni = new System.Windows.Forms.NotifyIcon();
 		this.ni.Icon = InactiveIcon;
 		this.ni.Text = "Disconnected.";
@@ -97,7 +107,8 @@ public partial class MainWindow : Window
 			AutoSize = true
 		};
 		this.ni.ContextMenuStrip.Items.Add("Hide").Click +=
-			delegate (object sender, EventArgs args) {
+			delegate (object sender, EventArgs args)
+			{
 				var sdr = (ToolStripItem)sender;
 
 				//if(args.Clicks != 0) return;
@@ -116,7 +127,8 @@ public partial class MainWindow : Window
 			}
 		!;
 		this.ni.ContextMenuStrip.Items.Add("Exit").Click +=
-			delegate (object sender, EventArgs args) {
+			delegate (object sender, EventArgs args)
+			{
 				this.Close();
 				System.Windows.Forms.Application.Exit();
 			}
@@ -135,12 +147,12 @@ public partial class MainWindow : Window
 		DateTime start = DateTime.UtcNow;
 		for(int w = 0; w < blueBm.Width; w++)
 		{
-			for(int h = 0; h< blueBm.Height; h++)
+			for(int h = 0; h < blueBm.Height; h++)
 			{
 				var p = blueBm.GetPixel(w, h);
 				if(p.B > 250 && p.R < 50 && p.G < 50)
 				{
-					blueBm.SetPixel(w,h,System.Drawing.Color.FromArgb(255,255,0,0));
+					blueBm.SetPixel(w, h, System.Drawing.Color.FromArgb(255, 255, 0, 0));
 				}
 			}
 		}
@@ -164,8 +176,10 @@ public partial class MainWindow : Window
 		Console.WriteLine("OnInitialized called.");
 
 		this.UIManager.StateChanged += (state) => this.Dispatcher.Invoke(this.SetVisiblePanel);
-		this.UIManager.StateChanged += (state) => {
-			if(state != UserInterfaceManager.States.Authentication) {
+		this.UIManager.StateChanged += (state) =>
+		{
+			if(state != UserInterfaceManager.States.Authentication)
+			{
 				this.Dispatcher.Invoke(this.OnAuthed);
 			}
 		};
@@ -175,9 +189,12 @@ public partial class MainWindow : Window
 		Console.WriteLine("Trying to load user.");
 		_ = await this.UIManager.TryLoadUser();
 
-		this.UIManager.ActiveNodeChanged += (nodeId) => {
-			try {
-				for(int i = 0; i < this.ServersListSP.Children.Count; i++) {
+		this.UIManager.ActiveNodeChanged += (nodeId) =>
+		{
+			try
+			{
+				for(int i = 0; i < this.ServersListSP.Children.Count; i++)
+				{
 					var nodeComponent = (TextBlock)((Border)this.ServersListSP.Children[i]).Child;
 
 					// dont ask... + dont care
@@ -190,7 +207,8 @@ public partial class MainWindow : Window
 						? Colors.LightGreen
 						: Colors.White);
 				}
-			} catch { }
+			}
+			catch { }
 		};
 
 		this.UIManager.ActiveNodeChanged += (_) => SetProperIcon();
@@ -212,6 +230,67 @@ public partial class MainWindow : Window
 			this.WrapperGrid.IsEnabled = true;
 		}
 	}
+
+	private static async Task<bool> CheckNetwork(int timeout = 5000)
+	{
+		try
+		{
+			var p = new Ping();
+			return
+				(await p.SendPingAsync("ya.ru", 5000)).Status == 0
+				||
+				(await p.SendPingAsync("ya.kz", 5000)).Status == 0
+				||
+				(await p.SendPingAsync("gov.pl", 5000)).Status == 0
+				||
+				(await p.SendPingAsync("google.com", 5000)).Status == 0;
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
+	private static string powerChangeEventHandlerMonitor = nameof(OnPowerModeChanged);
+	public async void OnPowerModeChanged()
+	{
+		try
+		{
+			Monitor.TryEnter(powerChangeEventHandlerMonitor, 10 * 1000);
+
+			await Task.Delay(1000);
+			if(await CheckNetwork()) return;
+
+			this.WrapperGrid.IsEnabled = false;
+			await this.UIManager.EnsureDisconnected();
+
+			if(!((await AuthTokenProvider.Create())?.IsAuthenticated ?? false))
+			{
+				await Task.Delay(3000);
+				if(!((await AuthTokenProvider.Create())?.IsAuthenticated ?? false))
+				{
+					var sdr = this.ni.ContextMenuStrip?.Items.Find("Hide", false)
+						.Concat(this.ni.ContextMenuStrip.Items.Find("Show", false))
+						.Single();
+
+					if(sdr is not null) sdr.Text = "Hide";
+
+					this.Show();
+					this.WindowState = WindowState.Normal;
+					if(await CheckNetwork()) 
+						this.UIManager.State = UserInterfaceManager.States.Authentication;
+					return;
+				}
+			}
+
+			await this.UIManager.ConnectToSelectedNode(await this.UIManager.LastConnectedNode());
+		}
+		finally
+		{
+			Monitor.Exit(powerChangeEventHandlerMonitor);
+		}
+	}
+
 	private void SetProperIcon()
 	{
 		if(this.UIManager.CurrentlyConnectedNode is null)
@@ -225,7 +304,7 @@ public partial class MainWindow : Window
 			string text = "Connected.";
 			try
 			{
-				text = $"Connected to \'{this.UIManager.Nodes.Single(x=> x.Id == this.UIManager.CurrentlyConnectedNode).Name}\'";
+				text = $"Connected to \'{this.UIManager.Nodes.Single(x => x.Id == this.UIManager.CurrentlyConnectedNode).Name}\'";
 			}
 			catch { }
 			this.ni.Text = text;
@@ -233,7 +312,8 @@ public partial class MainWindow : Window
 	}
 	private async void OnAuthed()
 	{
-		if(this.UIManager.Nodes is null) {
+		if(this.UIManager.Nodes is null)
+		{
 			_ = await this.UIManager.LoadNodes();
 		}
 
@@ -241,8 +321,10 @@ public partial class MainWindow : Window
 		this.UserAccessLevelLB.Text = this.UIManager.UserInfo?.GetAccessLevel().ToString();
 
 		this.ServersListSP.Children.Clear();
-		if(this.UIManager.Nodes is null || this.UIManager.Nodes.Length < 1) {
-			_ = this.ServersListSP.Children.Add(new TextBlock() {
+		if(this.UIManager.Nodes is null || this.UIManager.Nodes.Length < 1)
+		{
+			_ = this.ServersListSP.Children.Add(new TextBlock()
+			{
 				Text = "Sorry, there are no servers available.",
 				Margin = new(0, 5, 0, 0),
 				FontWeight = FontWeight.FromOpenTypeWeight(600),
@@ -250,22 +332,27 @@ public partial class MainWindow : Window
 			});
 			return;
 		}
-		foreach(var node in this.UIManager.Nodes) {
+		foreach(var node in this.UIManager.Nodes)
+		{
 			var space = node.Id.ToString().Length > 1 ? "" : " ";
 			// https://www.autoitscript.com/autoit3/docs/appendix/fonts.htm
-			var border = new Border() {
+			var border = new Border()
+			{
 				BorderThickness = new(1),
 				BorderBrush = new SolidColorBrush(Colors.Black),
 				Margin = new(0, 5, 0, 0),
 			};
-			var block = new TextBlock() {
+			var block = new TextBlock()
+			{
 				Text = $"#{node.Id}{space} {node.Name}",
 				FontFamily = new System.Windows.Media.FontFamily(@"Lucida Console"),
 				FontWeight = FontWeight.FromOpenTypeWeight(600),
 				Padding = new(5),
 			};
-			block.MouseDown += async (s, e) => {
-				if(e.ClickCount == 2) {
+			block.MouseDown += async (s, e) =>
+			{
+				if(e.ClickCount == 2)
+				{
 					this.WrapperGrid.IsEnabled = false;
 					_ = await this.UIManager.ConnectToSelectedNode(node.Id);
 					await Task.Delay(1000); // TODO: REMOVE IF UNNEEDED
@@ -284,7 +371,8 @@ public partial class MainWindow : Window
 		this.AuthPanel.Visibility = Visibility.Collapsed;
 		this.TunnelingPanel.Visibility = Visibility.Collapsed;
 
-		switch(this.UIManager.State) {
+		switch(this.UIManager.State)
+		{
 			case UserInterfaceManager.States.Authentication:
 				this.AuthPanel.Visibility = Visibility.Visible;
 				break;
@@ -333,12 +421,16 @@ public partial class MainWindow : Window
 
 	protected override async void OnClosing(CancelEventArgs e)
 	{
-		try {
+		try
+		{
 			this.UIManager.tunnelManager.DeleteConfigFile();
-		} catch { }
-		try {
+		}
+		catch { }
+		try
+		{
 			this.ni.Visible = false;
-		} catch { }
+		}
+		catch { }
 
 		base.OnClosing(e);
 
@@ -358,12 +450,14 @@ public partial class MainWindow : Window
 	private async void LogOutBT_Click(object sender, RoutedEventArgs e)
 	{
 		this.WrapperGrid.IsEnabled = false;
-		try {
+		try
+		{
 			_ = await this.UIManager.LogOut();
 			Console.WriteLine("Logged out successfully. ");
 
 			this.SetVisiblePanel();
-		} catch { }
+		}
+		catch { }
 		this.WrapperGrid.IsEnabled = true;
 	}
 
