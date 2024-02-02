@@ -1,5 +1,7 @@
 ﻿using ApiQuerier.Services;
+using Microsoft.Toolkit.Uwp.Notifications;
 using Microsoft.Win32;
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -91,8 +93,6 @@ public partial class MainWindow : Window
 		this.InitializeComponent();
 		Console.WriteLine("Inited components.");
 
-		SystemEvents.PowerModeChanged += (a,b) => OnPowerModeChanged();
-
 		#region minimized icon creator
 		this.InactiveIcon = System.Drawing.Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath)!;
 		var t = this.InactiveIcon.ToBitmap();
@@ -136,6 +136,8 @@ public partial class MainWindow : Window
 		this.ni.MouseDoubleClick += this.OnIconSwitchClick;
 		Console.WriteLine("Created icons.");
 		#endregion
+
+		ScheduleNetCheck();
 	}
 	private void onNewAction()
 	{
@@ -231,64 +233,121 @@ public partial class MainWindow : Window
 		}
 	}
 
-	private static async Task<bool> CheckNetwork(int timeout = 5000)
+	private static readonly ConcurrentDictionary<string, int>
+		_usedPingHosts = new(Environment.ProcessorCount, TopSites.Sites.Length);
+	private static IEnumerable<string>? _orderedPingHosts;
+	private static DateTime _pingHostsLastOrdered;
+	private static async Task<bool> CheckNetwork()
 	{
+		var cancelSource = new CancellationTokenSource();
+		if(_orderedPingHosts is null || (DateTime.UtcNow - _pingHostsLastOrdered).TotalMinutes > 5)
+		{
+			_orderedPingHosts = TopSites.Sites.OrderBy(x => _usedPingHosts.TryGetValue(x, out var v) ? v : 0).Take(32).ToList();
+			_pingHostsLastOrdered = DateTime.UtcNow;
+			Console.WriteLine($"NetCheck: ping hosts reordered.");
+		}
+
+		var tasks = _orderedPingHosts.Select(x => new Action(() =>
+		{
+			if(cancelSource.IsCancellationRequested) return;
+
+			_usedPingHosts.TryAdd(x, 0);
+			_usedPingHosts[x]++;
+
+			Console.WriteLine($"NetCheck: ping '{x}'.");
+			bool success = false;
+			try { success = new Ping().Send(x, 1000).Status == 0; }
+			catch { }
+			if(!cancelSource.IsCancellationRequested)
+			{
+				if(success)
+				{
+					cancelSource.Cancel();
+					Console.WriteLine($"NetCheck: ping succeeded.");
+				}
+				else
+				{
+					Console.WriteLine($"NetCheck: ping failed.");
+				}
+			}
+		}));
+
 		try
 		{
-			var p = new Ping();
-			return
-				(await p.SendPingAsync("ya.ru", 5000)).Status == 0
-				||
-				(await p.SendPingAsync("ya.kz", 5000)).Status == 0
-				||
-				(await p.SendPingAsync("gov.pl", 5000)).Status == 0
-				||
-				(await p.SendPingAsync("google.com", 5000)).Status == 0;
+			await Task.Run(() => Parallel.ForEach(tasks, new ParallelOptions
+			{
+				CancellationToken = cancelSource.Token,
+				MaxDegreeOfParallelism = 4,
+			}, x => x()));
 		}
-		catch
+		catch(OperationCanceledException) { }
+
+		// cancelled if ping was successful
+		return cancelSource.IsCancellationRequested;
+	}
+
+	public async void ScheduleNetCheck()
+	{
+		Console.WriteLine($"{nameof(PerformNetCheck)}: scheduled.");
+		while(true)
 		{
-			return false;
+			await Task.Delay(2000);
+			Console.WriteLine($"{nameof(PerformNetCheck)}: iteration.");
+
+#if RELEASE
+			var gapMin = 1;
+			var delay = 10*1000;
+#else
+			var gapMin = 0;
+			var delay = 10;
+#endif
+
+			if(this.UIManager.IsConnected &&
+				(DateTime.UtcNow - this.UIManager.LastConnected).TotalMinutes > gapMin)
+				await PerformNetCheck();
+			else
+				await Task.Delay(delay);
 		}
 	}
 
-	private static string powerChangeEventHandlerMonitor = nameof(OnPowerModeChanged);
-	public async void OnPowerModeChanged()
+	public async Task PerformNetCheck()
 	{
-		try
+		if(this.UIManager.IsConnected == false) return;
+		if(await CheckNetwork()) return;
+		Console.WriteLine($"NetCheck: all pings failed.");
+
+		this.WrapperGrid.IsEnabled = false;
+		await this.UIManager.EnsureDisconnected();
+
+		const int limit = 100;
+		for(int i = 1; i <= limit; i += 1)
 		{
-			Monitor.TryEnter(powerChangeEventHandlerMonitor, 10 * 1000);
-
-			await Task.Delay(1000);
-			if(await CheckNetwork()) return;
-
-			this.WrapperGrid.IsEnabled = false;
-			await this.UIManager.EnsureDisconnected();
-
-			if(!((await AuthTokenProvider.Create())?.IsAuthenticated ?? false))
+			if(i == limit)
 			{
-				await Task.Delay(3000);
-				if(!((await AuthTokenProvider.Create())?.IsAuthenticated ?? false))
-				{
-					var sdr = this.ni.ContextMenuStrip?.Items.Find("Hide", false)
-						.Concat(this.ni.ContextMenuStrip.Items.Find("Show", false))
-						.Single();
-
-					if(sdr is not null) sdr.Text = "Hide";
-
-					this.Show();
-					this.WindowState = WindowState.Normal;
-					if(await CheckNetwork()) 
-						this.UIManager.State = UserInterfaceManager.States.Authentication;
-					return;
-				}
+				new ToastContentBuilder()
+					.AddText("VPN disconnected.")
+					.AddText("Click to reconnect now.")
+					.Show(t => t.Activated += async (sender, args) =>
+					{
+						if(!this.UIManager.IsConnected)
+						{
+							this.WrapperGrid.IsEnabled = false;
+							await this.UIManager.ConnectToSelectedNode(await this.UIManager.LastConnectedNode());
+							this.WrapperGrid.IsEnabled = true;
+						}
+					});
+				return;
 			}
 
-			await this.UIManager.ConnectToSelectedNode(await this.UIManager.LastConnectedNode());
+			if(await CheckNetwork()) break;
+			await Task.Delay(2000);
 		}
-		finally
-		{
-			Monitor.Exit(powerChangeEventHandlerMonitor);
-		}
+
+		Console.WriteLine($"NetCheck: reconnection invoked.");
+
+		this.WrapperGrid.IsEnabled = false;
+		await this.UIManager.ConnectToSelectedNode(await this.UIManager.LastConnectedNode());
+		this.WrapperGrid.IsEnabled = true;
 	}
 
 	private void SetProperIcon()
