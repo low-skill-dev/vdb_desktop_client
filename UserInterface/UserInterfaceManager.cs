@@ -129,8 +129,14 @@ internal sealed class UserInterfaceManager
 		return Nodes.First().Id;
 	}
 	public bool IsConnected = false;
+	public DateTime LastConnected = DateTime.UtcNow;
+
+	public bool DidUserDisconnectManually = true;
 	public async Task<bool> ConnectToSelectedNode(int nodeId)
 	{
+		if(this.IsConnected) DidUserDisconnectManually = true;
+		else DidUserDisconnectManually = false;
+
 		var prev = this.CurrentlyConnectedNode;
 		_ = await this.EnsureDisconnected();
 
@@ -157,6 +163,7 @@ internal sealed class UserInterfaceManager
 		{
 			this.CurrentlyConnectedNode = nodeId;
 			IsConnected = true;
+			LastConnected = DateTime.UtcNow;
 			_lastConnectedNode = nodeId;
 			this.ConnectedToNode?.Invoke();
 			_ = RuntimeInfoHelper.WriteLastConnectedNode(nodeId); // not awaited
@@ -169,6 +176,7 @@ internal sealed class UserInterfaceManager
 	{
 		var response = await this.tunnelManager.DeleteTunnel(); // just ensure
 		this.CurrentlyConnectedNode = null;
+		this.IsConnected = false;
 		return response;
 	}
 

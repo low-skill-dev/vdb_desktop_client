@@ -237,7 +237,7 @@ public class AuthTokenProvider
 		Log("ctor completed");
 	}
 
-	public static async Task<AuthTokenProvider?> Create()
+	public static async Task<AuthTokenProvider> Create()
 	{
 		Log($"{nameof(Create)} started");
 
