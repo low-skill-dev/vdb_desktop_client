@@ -1,5 +1,5 @@
 #define MyAppName "Vdb VPN"
-#define MyAppVersion "1.2.1"
+#define MyAppVersion "1.2.2"
 #define MyAppPublisher "Vdb"
 #define MyAppURL "https://vdb.bruhcontent.ru/"
 #define MyAppExeName "UserInterface.exe"
@@ -17,7 +17,7 @@ DisableProgramGroupPage=yes
 LicenseFile=LICENSE.txt
 OutputBaseFilename=VdbInstaller
 SetupIconFile=icons\favicon256.ico
-Compression=none
+Compression=lzma2/ultra64
 WizardStyle=modern
 
 [Languages]
