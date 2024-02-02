@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace UserInterface;
 
@@ -193,24 +194,27 @@ public partial class MainWindow : Window
 
 		this.UIManager.ActiveNodeChanged += (nodeId) =>
 		{
-			try
+			Dispatcher.Invoke(() =>
 			{
-				for(int i = 0; i < this.ServersListSP.Children.Count; i++)
+				try
 				{
-					var nodeComponent = (TextBlock)((Border)this.ServersListSP.Children[i]).Child;
+					for(int i = 0; i < this.ServersListSP.Children.Count; i++)
+					{
+						var nodeComponent = (TextBlock)((Border)this.ServersListSP.Children[i]).Child;
 
-					// dont ask... + dont care
-					var node = int.Parse(nodeComponent
-						.Text.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries)[0]
-						.Trim("# ".ToCharArray()));
+						// dont ask... + dont care
+						var node = int.Parse(nodeComponent
+							.Text.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries)[0]
+							.Trim("# ".ToCharArray()));
 
-					nodeComponent.Background = new SolidColorBrush(
-						nodeId.HasValue && node == nodeId.Value
-						? Colors.LightGreen
-						: Colors.White);
+						nodeComponent.Background = new SolidColorBrush(
+							nodeId.HasValue && node == nodeId.Value
+							? Colors.LightGreen
+							: Colors.White);
+					}
 				}
-			}
-			catch { }
+				catch { }
+			});
 		};
 
 		this.UIManager.ActiveNodeChanged += (_) => SetProperIcon();
@@ -242,7 +246,7 @@ public partial class MainWindow : Window
 		var cancelSource = new CancellationTokenSource();
 		if(_orderedPingHosts is null || (DateTime.UtcNow - _pingHostsLastOrdered).TotalMinutes > 5)
 		{
-			_orderedPingHosts = TopSites.Sites.OrderBy(x => _usedPingHosts.TryGetValue(x, out var v) ? v : 0).Take(16).ToList();
+			_orderedPingHosts = TopSites.Sites.OrderBy(x => _usedPingHosts.TryGetValue(x, out var v) ? v : 0).Take(8).ToList();
 			_pingHostsLastOrdered = DateTime.UtcNow;
 			if(log) Console.WriteLine($"NetCheck: ping hosts reordered.");
 		}
@@ -315,11 +319,15 @@ public partial class MainWindow : Window
 		if(this.UIManager.IsConnected == false) return;
 		if(await CheckNetwork()) return;
 		Console.WriteLine($"NetCheck: all pings failed.");
+		if(this.UIManager.IsConnected == false) return;
 
 		this.WrapperGrid.IsEnabled = false;
 		await this.UIManager.EnsureDisconnected();
-
+#if RELEASE
 		const int limit = 60;
+#else
+		const int limit = 3;
+#endif
 		for(int i = 1; i <= limit; i += 1)
 		{
 			Console.WriteLine($"NetCheck: waiting for the internet.");
@@ -334,16 +342,15 @@ public partial class MainWindow : Window
 						if(!this.UIManager.IsConnected)
 						{
 							Console.WriteLine($"NetCheck: reconnection invoked.");
-							this.WrapperGrid.IsEnabled = false;
 							await this.UIManager.ConnectToSelectedNode(await this.UIManager.LastConnectedNode());
-							this.WrapperGrid.IsEnabled = true;
 						}
 					});
+				this.WrapperGrid.IsEnabled = true;
 				return;
 			}
 
 			if(await CheckNetwork(false)) break;
-			await Task.Delay(180/limit*1000);
+			await Task.Delay(3000);
 		}
 
 		Console.WriteLine($"NetCheck: reconnection invoked.");
