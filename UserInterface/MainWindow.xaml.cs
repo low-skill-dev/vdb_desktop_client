@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace UserInterface;
 
@@ -20,7 +21,7 @@ public partial class MainWindow : Window
 	private static string WorkingDirectoryPath => Environment.CurrentDirectory;
 	private static string LogPath => Path.Join(WorkingDirectoryPath, @"vdb.log");
 
-	private readonly UserInterfaceManager UIManager;
+	private UserInterfaceManager UIManager;
 	private readonly System.Windows.Forms.NotifyIcon ni;
 
 	private System.Drawing.Icon InactiveIcon;
@@ -164,6 +165,8 @@ public partial class MainWindow : Window
 
 	protected override async void OnInitialized(EventArgs e)
 	{
+		this.UIManager ??= new();
+
 		(await AuthTokenProvider.Create()).AccessTokenChanged += (t) =>
 		{
 			if(this.UIManager.State == UserInterfaceManager.States.Authentication)
@@ -173,6 +176,12 @@ public partial class MainWindow : Window
 		{
 			this.UIManager.UserInfo = (await AuthTokenProvider.Create()).CurrentUser;
 		};
+
+		if(this.UIManager.UserInfo is null)
+		{
+			this.UIManager.State = UserInterfaceManager.States.Authentication;
+			this.SetVisiblePanel();
+		}
 
 		base.OnInitialized(e);
 		Console.WriteLine("OnInitialized called.");
@@ -193,24 +202,27 @@ public partial class MainWindow : Window
 
 		this.UIManager.ActiveNodeChanged += (nodeId) =>
 		{
-			try
+			Dispatcher.Invoke(() =>
 			{
-				for(int i = 0; i < this.ServersListSP.Children.Count; i++)
+				try
 				{
-					var nodeComponent = (TextBlock)((Border)this.ServersListSP.Children[i]).Child;
+					for(int i = 0; i < this.ServersListSP.Children.Count; i++)
+					{
+						var nodeComponent = (TextBlock)((Border)this.ServersListSP.Children[i]).Child;
 
-					// dont ask... + dont care
-					var node = int.Parse(nodeComponent
-						.Text.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries)[0]
-						.Trim("# ".ToCharArray()));
+						// dont ask... + dont care
+						var node = int.Parse(nodeComponent
+							.Text.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries)[0]
+							.Trim("# ".ToCharArray()));
 
-					nodeComponent.Background = new SolidColorBrush(
-						nodeId.HasValue && node == nodeId.Value
-						? Colors.LightGreen
-						: Colors.White);
+						nodeComponent.Background = new SolidColorBrush(
+							nodeId.HasValue && node == nodeId.Value
+							? Colors.LightGreen
+							: Colors.White);
+					}
 				}
-			}
-			catch { }
+				catch { }
+			});
 		};
 
 		this.UIManager.ActiveNodeChanged += (_) => SetProperIcon();
@@ -237,14 +249,14 @@ public partial class MainWindow : Window
 		_usedPingHosts = new(Environment.ProcessorCount, TopSites.Sites.Length);
 	private static IEnumerable<string>? _orderedPingHosts;
 	private static DateTime _pingHostsLastOrdered;
-	private static async Task<bool> CheckNetwork()
+	private static async Task<bool> CheckNetwork(bool log = true)
 	{
 		var cancelSource = new CancellationTokenSource();
 		if(_orderedPingHosts is null || (DateTime.UtcNow - _pingHostsLastOrdered).TotalMinutes > 5)
 		{
-			_orderedPingHosts = TopSites.Sites.OrderBy(x => _usedPingHosts.TryGetValue(x, out var v) ? v : 0).Take(32).ToList();
+			_orderedPingHosts = TopSites.Sites.OrderBy(x => _usedPingHosts.TryGetValue(x, out var v) ? v : 0).Take(8).ToList();
 			_pingHostsLastOrdered = DateTime.UtcNow;
-			Console.WriteLine($"NetCheck: ping hosts reordered.");
+			if(log) Console.WriteLine($"NetCheck: ping hosts reordered.");
 		}
 
 		var tasks = _orderedPingHosts.Select(x => new Action(() =>
@@ -254,7 +266,7 @@ public partial class MainWindow : Window
 			_usedPingHosts.TryAdd(x, 0);
 			_usedPingHosts[x]++;
 
-			Console.WriteLine($"NetCheck: ping '{x}'.");
+			if(log) Console.WriteLine($"NetCheck: ping '{x}'.");
 			bool success = false;
 			try { success = new Ping().Send(x, 1000).Status == 0; }
 			catch { }
@@ -263,11 +275,11 @@ public partial class MainWindow : Window
 				if(success)
 				{
 					cancelSource.Cancel();
-					Console.WriteLine($"NetCheck: ping succeeded.");
+					if(log) Console.WriteLine($"NetCheck: ping succeeded.");
 				}
 				else
 				{
-					Console.WriteLine($"NetCheck: ping failed.");
+					if(log) Console.WriteLine($"NetCheck: ping failed.");
 				}
 			}
 		}));
@@ -277,7 +289,7 @@ public partial class MainWindow : Window
 			await Task.Run(() => Parallel.ForEach(tasks, new ParallelOptions
 			{
 				CancellationToken = cancelSource.Token,
-				MaxDegreeOfParallelism = 4,
+				MaxDegreeOfParallelism = 1,
 			}, x => x()));
 		}
 		catch(OperationCanceledException) { }
@@ -296,10 +308,10 @@ public partial class MainWindow : Window
 
 #if RELEASE
 			var gapMin = 1;
-			var delay = 10*1000;
+			var delay = 3*1000;
 #else
 			var gapMin = 0;
-			var delay = 10;
+			var delay = 1000;
 #endif
 
 			if(this.UIManager.IsConnected &&
@@ -315,13 +327,19 @@ public partial class MainWindow : Window
 		if(this.UIManager.IsConnected == false) return;
 		if(await CheckNetwork()) return;
 		Console.WriteLine($"NetCheck: all pings failed.");
+		if(this.UIManager.IsConnected == false) return;
 
 		this.WrapperGrid.IsEnabled = false;
 		await this.UIManager.EnsureDisconnected();
-
-		const int limit = 100;
+#if RELEASE
+		const int limit = 60;
+#else
+		const int limit = 3;
+#endif
 		for(int i = 1; i <= limit; i += 1)
 		{
+			Console.WriteLine($"NetCheck: waiting for the internet.");
+
 			if(i == limit)
 			{
 				new ToastContentBuilder()
@@ -331,16 +349,16 @@ public partial class MainWindow : Window
 					{
 						if(!this.UIManager.IsConnected)
 						{
-							this.WrapperGrid.IsEnabled = false;
+							Console.WriteLine($"NetCheck: reconnection invoked.");
 							await this.UIManager.ConnectToSelectedNode(await this.UIManager.LastConnectedNode());
-							this.WrapperGrid.IsEnabled = true;
 						}
 					});
+				this.WrapperGrid.IsEnabled = true;
 				return;
 			}
 
-			if(await CheckNetwork()) break;
-			await Task.Delay(2000);
+			if(await CheckNetwork(false)) break;
+			await Task.Delay(3000);
 		}
 
 		Console.WriteLine($"NetCheck: reconnection invoked.");

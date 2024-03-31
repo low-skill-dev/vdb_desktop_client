@@ -176,6 +176,7 @@ internal sealed class UserInterfaceManager
 	{
 		var response = await this.tunnelManager.DeleteTunnel(); // just ensure
 		this.CurrentlyConnectedNode = null;
+		this.IsConnected = false;
 		return response;
 	}
 

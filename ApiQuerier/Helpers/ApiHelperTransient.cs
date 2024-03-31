@@ -206,9 +206,17 @@ public sealed class ApiHelperTransient
 	{
 		Trace.WriteLine($"{nameof(ConnectToNode)} started.");
 
-		var response = await httpClient.PutAsync(
-			HostPathTls + ApiBasePath + ConnectionPath,
-			JsonContent.Create(request, options: jsonOptions));
+		HttpResponseMessage response;
+		try
+		{
+			response = await httpClient.PutAsync(
+				HostPathTls + ApiBasePath + ConnectionPath,
+				JsonContent.Create(request, options: jsonOptions));
+		}
+		catch(Exception ex) when (ex.Message.Contains("No such host is known", StringComparison.InvariantCultureIgnoreCase))
+		{
+			return null;
+		}
 
 		this.LastStatusCode = (int)response.StatusCode;
 #if DEBUG

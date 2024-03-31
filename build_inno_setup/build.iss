@@ -17,7 +17,7 @@ DisableProgramGroupPage=yes
 LicenseFile=LICENSE.txt
 OutputBaseFilename=VdbInstaller
 SetupIconFile=icons\favicon256.ico
-Compression=none
+Compression=lzma2/ultra64
 WizardStyle=modern
 
 [Languages]
