@@ -8,6 +8,9 @@ using static ApiQuerier.Helpers.Constants;
 using FilesHelper;
 using System.Globalization;
 using System.Security.Claims;
+using System.Net;
+using RestSharp;
+using System.Net.NetworkInformation;
 
 namespace ApiQuerier.Services;
 
@@ -223,14 +226,25 @@ public class AuthTokenProvider
 		_minimalAccessTokenLifespanPercent = 0.1;
 		_minimalRefreshTokenLifespanPercent = 0.1;
 
+
 		_httpHandler = new()
 		{
-			SslProtocols = Environment.OSVersion.Version.Major > 10
-				? SslProtocols.Tls13 : SslProtocols.Tls12
+			SslProtocols = SslProtocols.Tls12,
+			UseProxy = false,
+			ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
+			//Proxy = new WebProxy("socks5://5.42.95.199:59091")
+			//{
+			//	Credentials = new NetworkCredential("vdb", "8ws38CkTut3pUygaGdCUobYkR6tmZ5zU8kY5xry0iF5QbYCM"),
+			//},
 		};
+
 
 		_httpClient = new(_httpHandler);
 		_httpClient.Timeout = TimeSpan.FromSeconds(15);
+		//_httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; rv:125.0) Gecko/20100101 Firefox/125.0");
+		//_httpClient.DefaultRequestVersion = new(2, 0);
+		//_httpClient.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+
 
 		_jsonOpts = new(JsonSerializerDefaults.Web);
 
@@ -408,13 +422,13 @@ public class AuthTokenProvider
 	private async Task<bool> RefreshIfNeededAsync()
 	{
 		if(_accessToken is null || !_accessTokenLifespan.HasValue || !_accessValidTo.HasValue ||
-			(_accessValidTo - DateTime.UtcNow) < _minimalAccessTokenLifespanResolved) 
-			if (_refreshToken is not null) return await RefreshAsync();
+			(_accessValidTo - DateTime.UtcNow) < _minimalAccessTokenLifespanResolved)
+			if(_refreshToken is not null) return await RefreshAsync();
 
 		return true;
 	}
 
-		public static async Task LogoutAsync()
+	public static async Task LogoutAsync()
 	{
 
 	}

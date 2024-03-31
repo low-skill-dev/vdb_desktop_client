@@ -1,40 +1,40 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
+	<OutputType>WinExe</OutputType>
+	<TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+	<Nullable>enable</Nullable>
+	<ImplicitUsings>enable</ImplicitUsings>
+	<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>favicon256.ico</ApplicationIcon>
-    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+	<ApplicationIcon>favicon256.ico</ApplicationIcon>
+	<SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DebugType>embedded</DebugType>
+	<DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DebugType>embedded</DebugType>
+	<DebugType>embedded</DebugType>
   </PropertyGroup>
 
 
   <ItemGroup>
-    <Content Include="favicon256.ico" />
+	<Content Include="favicon256.ico" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.2.0" />
+	<PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
+	<PackageReference Include="RestSharp" Version="110.2.0" />
+	<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.5.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ApiModels\ApiModels.csproj" />
-    <ProjectReference Include="..\ApiQuerier\ApiQuerier.csproj" />
-    <ProjectReference Include="..\WireguardManipulator\WireguardManipulator.csproj" />
+	<ProjectReference Include="..\ApiModels\ApiModels.csproj" />
+	<ProjectReference Include="..\ApiQuerier\ApiQuerier.csproj" />
+	<ProjectReference Include="..\WireguardManipulator\WireguardManipulator.csproj" />
   </ItemGroup>
 
 </Project>
-
