@@ -21,7 +21,8 @@ internal static class WebCommon
 		httpHandler = new()
 		{
 			SslProtocols = Environment.OSVersion.Version.Major > 10
-				? SslProtocols.Tls13 : SslProtocols.Tls12 
+				? SslProtocols.Tls13 : SslProtocols.Tls12,
+			ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
 		};
 
 		httpClient = new(httpHandler);

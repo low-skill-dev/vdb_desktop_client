@@ -21,7 +21,7 @@ public partial class MainWindow : Window
 	private static string WorkingDirectoryPath => Environment.CurrentDirectory;
 	private static string LogPath => Path.Join(WorkingDirectoryPath, @"vdb.log");
 
-	private readonly UserInterfaceManager UIManager;
+	private UserInterfaceManager UIManager;
 	private readonly System.Windows.Forms.NotifyIcon ni;
 
 	private System.Drawing.Icon InactiveIcon;
@@ -165,6 +165,8 @@ public partial class MainWindow : Window
 
 	protected override async void OnInitialized(EventArgs e)
 	{
+		this.UIManager ??= new();
+
 		(await AuthTokenProvider.Create()).AccessTokenChanged += (t) =>
 		{
 			if(this.UIManager.State == UserInterfaceManager.States.Authentication)
@@ -174,6 +176,12 @@ public partial class MainWindow : Window
 		{
 			this.UIManager.UserInfo = (await AuthTokenProvider.Create()).CurrentUser;
 		};
+
+		if(this.UIManager.UserInfo is null)
+		{
+			this.UIManager.State = UserInterfaceManager.States.Authentication;
+			this.SetVisiblePanel();
+		}
 
 		base.OnInitialized(e);
 		Console.WriteLine("OnInitialized called.");
