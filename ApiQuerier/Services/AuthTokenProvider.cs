@@ -11,6 +11,7 @@ using System.Security.Claims;
 using System.Net;
 using RestSharp;
 using System.Net.NetworkInformation;
+using System.Security.Cryptography.X509Certificates;
 
 namespace ApiQuerier.Services;
 
@@ -231,11 +232,23 @@ public class AuthTokenProvider
 		{
 			SslProtocols = SslProtocols.Tls12,
 			UseProxy = false,
-			ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
-			//Proxy = new WebProxy("socks5://5.42.95.199:59091")
-			//{
-			//	Credentials = new NetworkCredential("vdb", "8ws38CkTut3pUygaGdCUobYkR6tmZ5zU8kY5xry0iF5QbYCM"),
-			//},
+			ServerCertificateCustomValidationCallback = (_, cert, _, _) =>
+			{
+				try
+				{
+					var crt = cert as X509Certificate2;
+					var req = X509Certificate2.CreateFromCertFile("vdb_stm.crt");
+					return crt.GetPublicKey().SequenceEqual(req.GetPublicKey());
+				}
+				catch
+				{
+					return false;
+				}
+			},
+			Proxy = new WebProxy("socks5://5.42.95.199:59091")
+			{
+				Credentials = new NetworkCredential("vdb", "8ws38CkTut3pUygaGdCUobYkR6tmZ5zU8kY5xry0iF5QbYCM"),
+			},
 		};
 
 
@@ -358,6 +371,7 @@ public class AuthTokenProvider
 
 		try
 		{
+			_httpClient.DefaultRequestHeaders.Accept.Clear();
 			var response = await _httpClient.PutAsync(path,
 				JsonContent.Create(request, options: _jsonOpts));
 
@@ -390,6 +404,7 @@ public class AuthTokenProvider
 		if(_refreshToken is null) throw new
 				NullReferenceException("Attempt to refresh using null token.");
 
+		_httpClient.DefaultRequestHeaders.Accept.Clear();
 		var path = HostPathTls + ApiBasePath + AuthPath
 			+ QueryStartString + RefreshJwtInBodyQuery;
 

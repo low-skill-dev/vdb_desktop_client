@@ -2,5 +2,5 @@
 
 public class RefreshJwtRequest
 {
-	public required string RefreshToken { get; init; }
+	public /*required*/ string RefreshToken { get; init; }
 }

@@ -32,9 +32,9 @@ public static class StringCryptocraphyNoStackAlloc
 
 	public class StringEncryptionResult
 	{
-		public required string HexAesGcmCipher { get; init; }
-		public required string HexAesGcmNonce { get; init; }
-		public required string HexAesGcmTag { get; init; }
+		public /*required*/ string HexAesGcmCipher { get; init; }
+		public /*required*/ string HexAesGcmNonce { get; init; }
+		public /*required*/ string HexAesGcmTag { get; init; }
 	}
 
 	/// <returns>In-stack encrypted string.</returns>

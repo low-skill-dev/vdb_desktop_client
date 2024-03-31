@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -32,6 +33,10 @@ public partial class MainWindow : Window
 	[DllImport("User32.dll")] private static extern bool SetForegroundWindow(IntPtr hWnd);
 	public MainWindow()
 	{
+
+		ServicePointManager.ServerCertificateValidationCallback +=
+			(_, _, _, _) => true;
+
 #if DEBUG
 		AllocConsole();
 #endif

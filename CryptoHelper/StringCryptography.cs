@@ -25,9 +25,9 @@ public static class StringCryptography
 
 	public class StringEncryptionResult
 	{
-		public required string HexAesGcmCipher { get; init; }
-		public required string HexAesGcmNonce { get; init; }
-		public required string HexAesGcmTag { get; init; }
+		public /*required*/ string HexAesGcmCipher { get; init; }
+		public /*required*/ string HexAesGcmNonce { get; init; }
+		public /*required*/ string HexAesGcmTag { get; init; }
 	}
 
 	/// <returns>In-stack encrypted string.</returns>
@@ -40,8 +40,11 @@ public static class StringCryptography
 		SHA256.HashData(keyBytes, key);
 
 		var rnd = RandomNumberGenerator.Create();
+#if NET8_0_OR_GREATER
 		var aes = new AesGcm(key, tagSizeInBytes);
-
+#else
+		var aes = new AesGcm(key);
+#endif
 		Span<byte> plain = stackalloc byte[UTF8.GetByteCount(plainText)];
 		Span<byte> cipher = stackalloc byte[plainText.Length];
 		Span<byte> nonce = stackalloc byte[nonceSizeInBytes];
@@ -59,7 +62,7 @@ public static class StringCryptography
 		};
 	}
 
-	#endregion
+#endregion
 
 	#region decrypt
 
@@ -86,7 +89,11 @@ public static class StringCryptography
 		Utf8HexToBytes(hexTag, tag);
 		SHA256.HashData(keyBytes, key);
 
+#if NET8_0_OR_GREATER
 		var aes = new AesGcm(key, tagSizeInBytes);
+#else
+		var aes = new AesGcm(key);
+#endif
 
 		aes.Decrypt(nonce, cipher, tag, plain);
 
@@ -96,5 +103,5 @@ public static class StringCryptography
 	public static string DecryptString(ReadOnlySpan<byte> keyBytes, StringEncryptionResult encrypted)
 		=> DecryptString(keyBytes, encrypted.HexAesGcmCipher, encrypted.HexAesGcmNonce, encrypted.HexAesGcmTag);
 
-	#endregion
+#endregion
 }

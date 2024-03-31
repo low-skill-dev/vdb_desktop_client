@@ -2,11 +2,11 @@
 
 public class UserInfo
 {
-	public required int Id { get; init; }
-	public required bool IsAdmin { get; init; }
-	public required string Email { get; init; }
-	public required bool IsEmailConfirmed { get; init; }
-	public required DateTime PayedUntilUtc { get; init; }
+	public /*required*/ int Id { get; init; }
+	public /*required*/ bool IsAdmin { get; init; }
+	public /*required*/ string Email { get; init; }
+	public /*required*/ bool IsEmailConfirmed { get; init; }
+	public /*required*/ DateTime PayedUntilUtc { get; init; }
 
 
 	public enum AccessLevels

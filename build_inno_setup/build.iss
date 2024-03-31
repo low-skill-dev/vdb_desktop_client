@@ -32,6 +32,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "..\UserInterface\bin\Release\net8.0-windows\publish\win-x64\{#MyAppExeName}";  DestDir: "{app}"
+Source: "..\certs\vdb_stm.crt";  DestDir: "{app}"
 Source: ".\additional_software\{#DotNetFileName}"; DestDir: "{tmp}"; Flags: deleteafterinstall; AfterInstall: InstallDotnet();
 Source: ".\additional_software\{#WgFileName}"; DestDir: "{tmp}"; Flags: deleteafterinstall; AfterInstall: InstallWg();
 

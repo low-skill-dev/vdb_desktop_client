@@ -1,5 +1,4 @@
 ﻿using BenchmarkDotNet.Attributes;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Security.Cryptography;
 using System.Runtime.Intrinsics.Arm;
 using CryptoHelper;

@@ -28,8 +28,8 @@ internal class Program
 	[DllImport("User32.dll")] private static extern bool SetForegroundWindow(IntPtr hWnd);
 	private static bool VerifySingleInstance()
 	{
-		ServicePointManager.ServerCertificateValidationCallback +=
-			(_, _, _, _) => true;
+		//ServicePointManager.ServerCertificateValidationCallback +=
+		//	(_, _, _, _) => true;
 
 		try
 		{

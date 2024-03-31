@@ -15,9 +15,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FilesHelper", "FilesHelper\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoHelper", "CryptoHelper\CryptoHelper.csproj", "{232B54D7-5FFD-4F2E-80FA-5F164082421E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{15AB198E-A6ED-42CA-A7C0-05303490DED7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{15AB198E-A6ED-42CA-A7C0-05303490DED7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "Benchmarks\Benchmarks.csproj", "{E06CBE89-A8BE-48E2-A634-CD8E765AEF7B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benchmarks", "Benchmarks\Benchmarks.csproj", "{E06CBE89-A8BE-48E2-A634-CD8E765AEF7B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{96D05A21-B2C9-4DCC-948F-4AD571336218}"
+	ProjectSection(SolutionItems) = preProject
+		nginx-selfsigned.crt = nginx-selfsigned.crt
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

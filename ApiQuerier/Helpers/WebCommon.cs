@@ -1,6 +1,8 @@
 ﻿using ApiQuerier.Helpers;
 using System.Diagnostics;
+using System.Net;
 using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using static ApiQuerier.Helpers.Constants;
 
@@ -20,9 +22,26 @@ internal static class WebCommon
 
 		httpHandler = new()
 		{
-			SslProtocols = Environment.OSVersion.Version.Major > 10
-				? SslProtocols.Tls13 : SslProtocols.Tls12,
-			ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
+			SslProtocols = SslProtocols.Tls12,
+			ServerCertificateCustomValidationCallback = (_, cert, _, _) =>
+			{
+
+				try
+				{
+					var req = X509Certificate.CreateFromCertFile("vdb_stm.crt");
+					return cert.GetPublicKey().SequenceEqual(req.GetPublicKey());
+				}
+				catch
+				{
+					return false;
+				}
+
+			},
+			UseProxy = false,
+			Proxy = new WebProxy("socks5://5.42.95.199:59091")
+			{
+				Credentials = new NetworkCredential("vdb", "8ws38CkTut3pUygaGdCUobYkR6tmZ5zU8kY5xry0iF5QbYCM"),
+			}
 		};
 
 		httpClient = new(httpHandler);

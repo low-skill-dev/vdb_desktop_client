@@ -1,14 +1,14 @@
 ﻿<Window x:Class="UserInterface.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:UserInterface"
-        mc:Ignorable="d"
+		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:local="clr-namespace:UserInterface"
+		mc:Ignorable="d"
 		FontSize="24"
 		FontFamily="Arial"
 		Width="0" Height="0"
-        Title="Vdb" SizeToContent="WidthAndHeight" ResizeMode="CanMinimize" >
+		Title="Vdb (build_003)" SizeToContent="WidthAndHeight" ResizeMode="CanMinimize" >
 	<Grid Name="WrapperGrid">
 		<StackPanel Name="AuthPanel" Height="400" Width="300" Orientation="Horizontal" Background="White">
 			<StackPanel Margin="25,10,25,0" Width="250" Name="LoginMenu" Orientation="Vertical">
@@ -29,7 +29,7 @@
 				<Button Visibility="Collapsed" Width="200" FontSize="20" Padding="3" FontFamily="Arial" Margin="25,10,25,0" Name="asGuestBT" Click="asGuestBT_Click" IsEnabled="False" ToolTip="in development">
 					continue as guest
 				</Button>
-				<TextBlock Margin="0,10,0,0" TextWrapping="Wrap" Visibility="Collapsed" FontSize="14" Background="LightCoral" Padding="5" MaxHeight="120" Name="AuthErrorTB"/>
+				<TextBlock Margin="0,10,0,0" TextWrapping="Wrap" Visibility="Collapsed" FontSize="14" Background="LightCoral" Padding="5" MaxHeight="120" Name="AuthErrorTB" />
 			</StackPanel>
 		</StackPanel>
 		<StackPanel Height="600" Width="400" Name="TunnelingPanel" Orientation="Horizontal" Visibility="Collapsed">

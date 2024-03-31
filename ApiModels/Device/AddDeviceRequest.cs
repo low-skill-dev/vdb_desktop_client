@@ -2,5 +2,5 @@
 
 public class AddDeviceRequest
 {
-	public required string WireguardPublicKey { get; init; }
+	public /*required*/ string WireguardPublicKey { get; init; }
 }
