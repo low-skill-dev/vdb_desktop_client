@@ -30,6 +30,9 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}";
 
+[InstallDelete]
+Type: filesandordirs; Name: "{app}\UserInterface.exe"
+
 [Files]
 Source: "..\UserInterface\bin\Release\net8.0-windows\publish\win-x64\{#MyAppExeName}";  DestDir: "{app}"
 Source: "..\certs\vdb_stm.crt";  DestDir: "{app}"
