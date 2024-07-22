@@ -8,7 +8,7 @@
 		FontSize="24"
 		FontFamily="Arial"
 		Width="0" Height="0"
-		Title="Vdb (build_003)" SizeToContent="WidthAndHeight" ResizeMode="CanMinimize" >
+		Title="Vdb (build_004)" SizeToContent="WidthAndHeight" ResizeMode="CanMinimize" >
 	<Grid Name="WrapperGrid">
 		<StackPanel Name="AuthPanel" Height="400" Width="300" Orientation="Horizontal" Background="White">
 			<StackPanel Margin="25,10,25,0" Width="250" Name="LoginMenu" Orientation="Vertical">

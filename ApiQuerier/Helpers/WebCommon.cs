@@ -23,25 +23,25 @@ internal static class WebCommon
 		httpHandler = new()
 		{
 			SslProtocols = SslProtocols.Tls12,
-			ServerCertificateCustomValidationCallback = (_, cert, _, _) =>
-			{
+			//ServerCertificateCustomValidationCallback = (_, cert, _, _) =>
+			//{
 
-				try
-				{
-					var req = X509Certificate.CreateFromCertFile("vdb_stm.crt");
-					return cert.GetPublicKey().SequenceEqual(req.GetPublicKey());
-				}
-				catch
-				{
-					return false;
-				}
+			//	try
+			//	{
+			//		var req = X509Certificate.CreateFromCertFile("vdb_stm.crt");
+			//		return cert.GetPublicKey().SequenceEqual(req.GetPublicKey());
+			//	}
+			//	catch
+			//	{
+			//		return false;
+			//	}
 
-			},
-			UseProxy = false,
-			Proxy = new WebProxy("socks5://5.42.95.199:59091")
-			{
-				Credentials = new NetworkCredential("vdb", "8ws38CkTut3pUygaGdCUobYkR6tmZ5zU8kY5xry0iF5QbYCM"),
-			}
+			//},
+			//UseProxy = false,
+			//Proxy = new WebProxy("socks5://5.42.95.199:59091")
+			//{
+			//	Credentials = new NetworkCredential("vdb", "8ws38CkTut3pUygaGdCUobYkR6tmZ5zU8kY5xry0iF5QbYCM"),
+			//}
 		};
 
 		httpClient = new(httpHandler);

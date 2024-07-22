@@ -1,9 +1,9 @@
 #define MyAppName "Vdb VPN"
-#define MyAppVersion "1.2.3"
+#define MyAppVersion "1.2.4"
 #define MyAppPublisher "Vdb"
 #define MyAppURL "https://vdb.lowskill.dev/"
 #define MyAppExeName "UserInterface.exe"
-#define DotNetFileName "windowsdesktop-runtime-8.0.3-win-x64.exe";
+#define DotNetFileName "windowsdesktop-runtime-8.0.7-win-x64.exe";
 #define WgFileName "wireguard-amd64-0.5.3.msi";
 
 [Setup]
@@ -34,7 +34,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Type: filesandordirs; Name: "{app}\UserInterface.exe"
 
 [Files]
-Source: "..\UserInterface\bin\Release\net8.0-windows\publish\win-x64\{#MyAppExeName}";  DestDir: "{app}"
+Source: "..\UserInterface\bin\Release\net8.0\publish\win-x64\{#MyAppExeName}";  DestDir: "{app}"
 Source: "..\certs\vdb_stm.crt";  DestDir: "{app}"
 Source: ".\additional_software\{#DotNetFileName}"; DestDir: "{tmp}"; Flags: deleteafterinstall; AfterInstall: InstallDotnet();
 Source: ".\additional_software\{#WgFileName}"; DestDir: "{tmp}"; Flags: deleteafterinstall; AfterInstall: InstallWg();

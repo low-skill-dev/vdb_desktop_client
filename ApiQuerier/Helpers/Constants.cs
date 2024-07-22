@@ -4,8 +4,8 @@
 
 public static class Constants
 {
-	//public const string HostPathTls = @"https://vdb.lowskill.dev";
-	public const string HostPathTls = @"https://5.42.95.199:52933";
+	public const string HostPathTls = @"https://vdb.lowskill.dev";
+	//public const string HostPathTls = @"https://5.42.95.199:52933";
 	public const string QueryStartString = @"?";
 	public const string QueryAndString = @"&";
 	public const string ApiBasePath = @"/api";

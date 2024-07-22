@@ -232,23 +232,23 @@ public class AuthTokenProvider
 		{
 			SslProtocols = SslProtocols.Tls12,
 			UseProxy = false,
-			ServerCertificateCustomValidationCallback = (_, cert, _, _) =>
-			{
-				try
-				{
-					var crt = cert as X509Certificate2;
-					var req = X509Certificate2.CreateFromCertFile("vdb_stm.crt");
-					return crt.GetPublicKey().SequenceEqual(req.GetPublicKey());
-				}
-				catch
-				{
-					return false;
-				}
-			},
-			Proxy = new WebProxy("socks5://5.42.95.199:59091")
-			{
-				Credentials = new NetworkCredential("vdb", "8ws38CkTut3pUygaGdCUobYkR6tmZ5zU8kY5xry0iF5QbYCM"),
-			},
+			//ServerCertificateCustomValidationCallback = (_, cert, _, _) =>
+			//{
+			//	try
+			//	{
+			//		var crt = cert as X509Certificate2;
+			//		var req = X509Certificate2.CreateFromCertFile("vdb_stm.crt");
+			//		return crt.GetPublicKey().SequenceEqual(req.GetPublicKey());
+			//	}
+			//	catch
+			//	{
+			//		return false;
+			//	}
+			//},
+			//Proxy = new WebProxy("socks5://5.42.95.199:59091")
+			//{
+			//	Credentials = new NetworkCredential("vdb", "8ws38CkTut3pUygaGdCUobYkR6tmZ5zU8kY5xry0iF5QbYCM"),
+			//},
 		};
 
 
